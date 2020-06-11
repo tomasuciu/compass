@@ -1,36 +1,15 @@
+#ifndef DATA_HPP
+#define DATA_HPP
+
 #include <type_traits>
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
 #include <vector>
 
-namespace circle {
+#include <Eigen/Dense>
 
-/*template<typename I>
-std::enable_if_t<std::is_integral_v<I>>*/
-
-template<typename T,
-typename = std::enable_if_t<std::is_floating_point_v<T>>>
-
-class Data {
-public:
-
-    Data();
-    Data(int N);
-
-    Data(int N, std::vector<T> X, std::vector<T> Y): X(X), Y(Y) {}
-    ~Data();
-
-    void means();
-    void center();
-    void scale();
-    void print();
-
-private:
-    int n;
-    std::vector<T> X, Y;
-    T meanX, meanY;
-};
+namespace compass {
 
 template<typename T,
 typename = std::enable_if_t<std::is_floating_point_v<T>>>
@@ -57,32 +36,70 @@ struct Generate {
         return std::make_pair<T, T>(rand1*wrand, rand2*wrand);
     }
 
-    // Simulate data points equally spaced along a circular arc with Gaussian noise.
-    void SimulateArc(Data<T>& data, T a, T b, T R, T theta1, T theta2, T sigma) {
-        int N = data.n;
-        T theta;
+    /**
+     * Generate data points equally spaced along a circular arc with Gaussian noise.
+     * @param n         the number of points
+     * @param a, b      coordinates of the center
+     * @param radius    the radius of the circle
+     * @param theta1    first endpoint of the arc
+     * @param theta2    second endpoint of the arc
+     * @param sigma     standard deviation of residuals
+     */
+    [[nodiscard]] static Eigen::Ref<Eigen::Matrix2X<T>> SimulateArc(const std::size_t n,
+            T a, T b, T R, T theta1, T theta2, T sigma) {
+        Eigen::Matrix2X<T> data = Eigen::Matrix2X<T>::Zero(2, n);
 
-        for (int i=0; i < N; ++i) {
-            theta = theta1 + (theta2 - theta1)* i/(N-1);
+        auto dataColWise = data.colwise();
 
-            // isotropic Gaussian noise
-            auto [dx, dy] = RandomNormalPair();
+        std::transform(dataColWise.begin(), dataColWise.end(), dataColWise.begin(), [&](const auto &col) {
+                static size_t counter = 0;
 
-            data.X.at(i) = a + R*cos(theta) + sigma*dx;
-            data.Y.at(i) = b + R*sin(theta) + sigma*dy;
-        }
+                T theta = theta1 + (theta2 - theta1) * counter++/(n-1);
+                auto [dx, dy] = RandomNormalPair();
+
+                Eigen::Vector2<T> updatedCol;
+                auto newX = a + R*cos(theta) + sigma*dx;
+                auto newY = b + R*cos(theta) + sigma*dy;
+                updatedCol << newX, newY;
+                return updatedCol;
+        });
+
+        return data;
     }
+
+    /**
+     * Computes the terminal endpoint of an arc on a circle, given the radius and arc angle.
+     * @param a, b      coordinates of the center
+     * @param x, y      coordinates of the provided endpoint
+     * @param radius    the radius of the circle
+     * @param theta     the arc angle, wrt the center
+     */
+    [[nodiscard]] static std::pair<T, T> ComputeArcEndpoint(T a, T b, T x, T y, T radius, T theta) {
+        T alpha = std::atan((y - b)/(x - a));
+        T x1 = a + radius * std::cos(alpha + theta);
+        T y1 = b + radius * std::sin(alpha + theta);
+        return std::make_pair(x1, y1);
+    }
+
 
     // Simulate data points with uniform distribution in the square |x| < window, |y| < window
-    void SimulateRandom(Data<T>& data, T window) {
-        for (int i = 0; i < data.n; ++i) {
-            data.X.at(i) = window * (2* static_cast<T>(rand())/RAND_MAX - 1);
-            data.Y.at(i) = window * (2* static_cast<T>(rand())/RAND_MAX - 1);
-        }
-    }
+    [[nodiscard]] static Eigen::Ref<Eigen::Matrix2X<T>> SimulateRandom(const std::size_t n, T window) {
+        Eigen::Matrix2X<T> data = Eigen::Matrix2X<T>::Zero(2, n);
 
+        auto dataColWise = data.colwise();
+
+        std::transform(dataColWise.begin(), dataColWise.end(), dataColWise.begin(), [&](const auto &col) {
+                Eigen::Vector2<T> updatedCol;
+                auto newX = window * (2* static_cast<T>(rand())/RAND_MAX - 1);
+                auto newY = window * (2* static_cast<T>(rand())/RAND_MAX - 1);
+                updatedCol << newX, newY;
+                return updatedCol;
+        });
+        return data;
+    }
 };
 
 
 }
 
+#endif
