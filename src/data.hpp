@@ -52,19 +52,33 @@ struct Generate {
         auto dataColWise = data.colwise();
 
         std::transform(dataColWise.begin(), dataColWise.end(), dataColWise.begin(), [&](const auto &col) {
-                static size_t counter = 0;
+            static size_t counter = 0;
 
-                T theta = theta1 + (theta2 - theta1) * counter++/(n-1);
-                auto [dx, dy] = RandomNormalPair();
+            T theta = theta1 + (theta2 - theta1) * counter++/(n-1);
+            auto [dx, dy] = RandomNormalPair();
 
-                Eigen::Vector2<T> updatedCol;
-                auto newX = a + R*cos(theta) + sigma*dx;
-                auto newY = b + R*cos(theta) + sigma*dy;
-                updatedCol << newX, newY;
-                return updatedCol;
+            Eigen::Vector2<T> updatedCol;
+            auto newX = a + R*cos(theta) + sigma*dx;
+            auto newY = b + R*cos(theta) + sigma*dy;
+            updatedCol << newX, newY;
+            return updatedCol;
         });
 
         return data;
+    }
+
+    // Overload of SimulateArc, taking endpoints as Cartesian coordinates
+    [[nodiscard]] static Eigen::Ref<Eigen::Matrix2X<T>> SimulateArc(const std::size_t n,
+            T a, T b, T R, T x1, T y1, T x2, T y2, T sigma) {
+        auto theta1 = CartesianToPolar(x1, y1).second;
+        auto theta2 = CartesianToPolar(x2, y2).second;
+        return SimulateArc(n, a, b, R, theta1, theta2, sigma);
+    }
+
+    [[nodiscard]] static std::pair<T, T> CartesianToPolar(T x, T y) {
+        auto r = std::sqrt(std::pow(x, 2) + std::pow(y, 2));
+        auto theta = std::atan(y/x);
+        return std::make_pair(r, theta);
     }
 
     /**
@@ -89,11 +103,11 @@ struct Generate {
         auto dataColWise = data.colwise();
 
         std::transform(dataColWise.begin(), dataColWise.end(), dataColWise.begin(), [&](const auto &col) {
-                Eigen::Vector2<T> updatedCol;
-                auto newX = window * (2* static_cast<T>(rand())/RAND_MAX - 1);
-                auto newY = window * (2* static_cast<T>(rand())/RAND_MAX - 1);
-                updatedCol << newX, newY;
-                return updatedCol;
+            Eigen::Vector2<T> updatedCol;
+            auto newX = window * (2* static_cast<T>(rand())/RAND_MAX - 1);
+            auto newY = window * (2* static_cast<T>(rand())/RAND_MAX - 1);
+            updatedCol << newX, newY;
+            return updatedCol;
         });
         return data;
     }
