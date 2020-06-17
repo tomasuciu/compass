@@ -1,37 +1,35 @@
 #ifndef FIT_HPP
 #define FIT_HPP
 
+#include <algorithm>
 #include "data.hpp"
 #include "circle.hpp"
 #include <Eigen/Dense>
+#include <Eigen/Cholesky>
 
 namespace compass {
 
-struct Algebraic{};
-struct Geometric{};
+struct Geometric {
+static void LevenbergMarquardtFull() {}
+static void LevenbergMarquardtReduced() {}
+};
 
 template<typename T,
 typename = std::enable_if_t<std::is_floating_point_v<T>>>
-static void Kasa(const Eigen::Ref<Eigen::Matrix2X<T>>& data) {
-    double Xi, Yi, Zi;
-    double Mxy, Mxx, Myy, Mxz, Myz;
-    double B, C, G11, G12, G22, D1, D2;
 
-    T meanX = data.row(0).mean();
-    T meanY = data.row(1).mean();
+struct Algebraic {
 
-    Mxx = Myy = Mxy = Mxz = Myz = 0;
-    auto dataColWise = data.colwise();
+static void Kasa(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>& data) {
+    auto mean = Eigen::Vector2<T>(data.row(0).mean(), data.row(1).mean());
+    auto colwiseData = data.colwise();
 
-    std::size_t index = 0;
-    std::for_each(dataColWise.begin(), dataColWise.end(), [&](const auto &elem){
-        // centered X and Y coordinates
-        Xi = elem(0) - meanX;
-        Yi = elem(1) - meanY;
+    auto Mxy=0.0, Mxx=0.0, Myy=0.0, Mxz=0.0, Myz=0.0;
+    std::for_each(colwiseData.begin(), colwiseData.end(), [&](const auto &column){
 
-        Zi = std::pow(Xi, 2) + std::pow(Yi, 2);
+        auto Xi = column(0) - mean(0);
+        auto Yi = column(1) - mean(1);
+        auto Zi = std::pow(Xi, 2) + std::pow(Yi, 2);
 
-        // calculating moments
         Mxx += std::pow(Xi, 2);
         Myy += std::pow(Yi, 2);
         Mxy += Xi * Yi;
@@ -39,41 +37,43 @@ static void Kasa(const Eigen::Ref<Eigen::Matrix2X<T>>& data) {
         Myz += Yi * Zi;
     });
 
-    auto n = data.cols();
-
+    auto n = data.size();
     Mxx /= n;
     Myy /= n;
     Mxy /= n;
     Mxz /= n;
     Myz /= n;
 
-    // Naive implementation of Cholesky factorization; eventually use Eigen instead
-    G11 = std::sqrt(Mxx);
-    G12 = Mxy/G11;
-    G22 = std::sqrt(Myy - std::pow(G12, 2));
+    Eigen::Matrix<T, 3, 3> augMatrix;
+    augMatrix << Mxx, Mxy, 0,
+                 Mxy, Myy, 0,
+                 0,   0,   1;
 
-    // calculating circle parameters
-    D1 = Mxz/G11;
-    D2 = (Myz - D1*G12)/G22;
+    auto solVector = Eigen::Vector<T, 3>(-Mxz, -Myz, 0);
 
-    C = D2/G22/2.0;
-    B = (D1 - G12*C)/G11/2.0;
+    Eigen::LDLT<Eigen::Matrix<T, 3, 3>> cholesky = augMatrix.ldlt();
+    auto sol = cholesky.solve(solVector);
+    auto B = -1 * sol(0)/2.0;
+    auto C = -1 * sol(1)/2.0;
 
     Circle<T> fit;
 
-    fit.a = B + meanX;
-    fit.b = C + meanY;
-    fit.radius = std::sqrt(std::pow(B, 2) + std::pow(C, 2) + Mxx + Myy);
-    fit.sigma = 0; //TODO: Implement utility to calculate RSS
+    fit.a = B + mean(0);
+    fit.b = C + mean(1);
+
+    //TODO: Fix
+    fit.radius = std::sqrt(std::pow(B, 2) + std::pow(C, 2));
+    fit.sigma = 0; //TODO: Implement
     fit.i = 0;
     fit.j = 0;
 
     std::cout << fit << std::endl;
 }
 
-static void Pratt() {}
-static void LevenbergMarquardtFull() {}
-static void LevenbergMarquardtReduced() {}
 
-}
+static void Pratt(const Eigen::Ref<Eigen::Matrix2<T>>& data) {}
+
+};
+
+};
 #endif
