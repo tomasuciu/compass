@@ -1,11 +1,13 @@
 #ifndef FIT_HPP
 #define FIT_HPP
 
+#include <numeric>
 #include <algorithm>
 #include "data.hpp"
 #include "circle.hpp"
 #include <Eigen/Dense>
 #include <Eigen/Cholesky>
+#include <Eigen/SVD>
 
 namespace compass {
 
@@ -19,7 +21,11 @@ typename = std::enable_if_t<std::is_floating_point_v<T>>>
 
 struct Algebraic {
 
-static void Kasa(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>& data) {
+using ExtendedDesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 4>; // N x 4
+using DesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 3>; // N x 3
+using DataMatrix = Eigen::Matrix<T, 2, Eigen::Dynamic, Eigen::RowMajor>; // 2 X N
+
+static void Kasa(const Eigen::Matrix<T, 2, Eigen::Dynamic, Eigen::RowMajor>& data) {
     auto mean = Eigen::Vector2<T>(data.row(0).mean(), data.row(1).mean());
     auto colwiseData = data.colwise();
 
@@ -37,7 +43,7 @@ static void Kasa(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>
         Myz += Yi * Zi;
     });
 
-    auto n = data.size();
+    auto n = data.cols();
     Mxx /= n;
     Myy /= n;
     Mxy /= n;
@@ -70,11 +76,11 @@ static void Kasa(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>
     std::cout << fit << std::endl;
 }
 
-
-static void Pratt(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>& data) {
+static void PrattNewton(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>& data) {
     auto mean = Eigen::Vector2<T>(data.row(0).mean(), data.row(1).mean());
     auto colwiseData = data.colwise();
 
+    std::cout << mean << std::endl;
     auto Mxx=0.0, Myy=0.0, Mxy=0.0, Mxz=0.0, Myz=0.0, Mzz=0.0;
 
     std::for_each(colwiseData.begin(), colwiseData.end(), [&](const auto &column) {
@@ -90,7 +96,8 @@ static void Pratt(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor
         Myz += Yi*Zi;
     });
 
-    int n = data.size();
+    int n = data.cols();
+
     Mxx /= n;
     Myy /= n;
     Mxy /= n;
@@ -99,26 +106,29 @@ static void Pratt(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor
     Mzz /= n;
 
     // computing coefficients of characteristic polynomial
-    auto Mz = Mxx + Myy;
-    auto Cov_xy = Mxx*Myy - std::pow(Mxy, 2);
-    auto Var_z = Mzz - std::pow(Mz, 2);
 
-    auto A2 = 4.0*Cov_xy - 3.0*Mz*Mz - Mzz;
-    auto A1 = Var_z*Mz + 4.0*Cov_xy*Mz - Mxz*Mxz - Myz*Myz;
-    auto A0 = Mxz*(Mxz*Myy - Myz*Mxy) + Myz*(Myz*Mxx - Mxz*Mxy) - Var_z*Cov_xy;
-    auto A22 = A2 + A2;
+    double Mz = Mxx + Myy;
+    double Cov_xy = Mxx*Myy - Mxy*Mxy;
+    double Var_z = Mzz - Mz*Mz;
 
-    int iter = 0;
-    double x=0.0, y=0.0;
-    for(x=0.0, y=0.0, iter=0; iter < 99; iter++) {
+    double A2 = 4.0*Cov_xy - 3.0*Mz*Mz - Mzz;
+    double A1 = Var_z*Mz + 4.0*Cov_xy*Mz - Mxz*Mxz - Myz*Myz;
+    double A0 = Mxz*(Mxz*Myy - Myz*Mxy) + Myz*(Myz*Mxx - Mxz*Mxy) - Var_z*Cov_xy;
+    double A22 = A2 + A2;
 
-        double Dy = A1 + x*(A22 + 16.0 * std::pow(x, 2));
-        double xnew = x - y/Dy;
-        if ((xnew == x)||(!std::isfinite(xnew))) break;
-        double ynew = A0 + xnew*(A1 + xnew*(A2 + 4.0*xnew*xnew));
-        if (abs(ynew)>=abs(y))  break;
-        x = xnew;  y = ynew;
-    }
+    double x, y, Dy, xnew, ynew;
+    int iter, IterMAX=99;
+
+    // finds root using newton's method
+    for (x=0.,y=A0,iter=0; iter<IterMAX; iter++)
+        {
+            Dy = A1 + x*(A22 + 16.*x*x);
+            xnew = x - y/Dy;
+            if ((xnew == x)||(!std::isfinite(xnew))) break;
+            ynew = A0 + xnew*(A1 + xnew*(A2 + 4.0*xnew*xnew));
+            if (abs(ynew)>=abs(y))  break;
+            x = xnew;  y = ynew;
+        }
 
     auto DET = x*x - x*Mz + Cov_xy;
     auto Xcenter = (Mxz*(Myy - x) - Myz*Mxy)/DET/2.0;
@@ -127,8 +137,49 @@ static void Pratt(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor
     std::cout << "X: " << Xcenter + mean(0) << std::endl;
     std::cout << "Y: " << Ycenter + mean(1) << std::endl;
     std::cout << "Radius: " << sqrt(Xcenter*Xcenter + Ycenter*Ycenter + Mz + x + x) << std::endl;
-
     }
+
+static void PrattSVD(const Eigen::Matrix<T, 2, Eigen::Dynamic>& data) {
+
+    Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
+
+    ExtendedDesignMatrix designMat(data.cols(), 4);
+
+    auto designMatIt = designMat.rowwise().begin();
+    for (const auto & col: data.colwise()) {
+        auto Xi = col(0) - mean(0);
+        auto Yi = col(1) - mean(1);
+        auto Zi = std::pow(Xi, 2) + std::pow(Yi, 2);
+        Eigen::Vector4<T> designMatRow{Zi, Xi, Yi, 1.0};
+
+        *designMatIt = designMatRow;
+        designMatIt = std::next(designMatIt);
+    }
+
+    std::cout << designMat << std::endl;
+
+    Eigen::BDCSVD<Eigen::MatrixX<T>> svd(designMat, Eigen::ComputeThinU | Eigen::ComputeThinV);
+
+    auto sigma = svd.singularValues();
+    auto V = svd.matrixV();
+
+    const double epsilon = 1.0e-13;
+    if (sigma(3) < epsilon) {
+        // singular case: the solution A is the right singular vector, i.e., fourth column of V
+        auto A = V(3);
+        // compute circle parameters.
+        return;
+    } else {
+        // Y = V * sigma * V^T
+        auto Y = V * sigma.asDiagonal() * V.transpose();
+        // compute Y * B^-1 * Y, where B is the constant constraint matrix
+        // Select the eigenpair (n, A_) with the smallest positive eigenvalue n
+        // compute A = Y^-1 A_
+        // compute circle parameters
+        return;
+    }
+}
+
 
 };
 
