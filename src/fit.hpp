@@ -172,6 +172,14 @@ static void PrattSVD(const Eigen::Matrix<T, 2, Eigen::Dynamic>& data) {
     } else {
         // Y = V * sigma * V^T
         auto Y = V * sigma.asDiagonal() * V.transpose();
+        Eigen::Matrix4<T> B;
+        B << 0, 0, 0, -2,
+             0, 1, 0,  0,
+             0, 0, 1,  0,
+            -2, 0, 0,  0;
+
+        auto result = Y * B.inverse() * Y;
+
         // compute Y * B^-1 * Y, where B is the constant constraint matrix
         // Select the eigenpair (n, A_) with the smallest positive eigenvalue n
         // compute A = Y^-1 A_
@@ -180,6 +188,15 @@ static void PrattSVD(const Eigen::Matrix<T, 2, Eigen::Dynamic>& data) {
     }
 }
 
+static void Nievergelt(const DataMatrix& data) {
+    using GolubDesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 3>;
+    Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
+
+    GolubDesignMatrix designMat;
+}
+
+static void TaubinNewton(const DataMatrix& data) {}
+static void TaubinSVD(const DataMatrix& data) {}
 
 };
 
