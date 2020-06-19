@@ -157,8 +157,6 @@ static void PrattSVD(const Eigen::Matrix<T, 2, Eigen::Dynamic>& data) {
         designMatIt = std::next(designMatIt);
     }
 
-    std::cout << designMat << std::endl;
-
     Eigen::BDCSVD<Eigen::MatrixX<T>> svd(designMat, Eigen::ComputeThinU | Eigen::ComputeThinV);
 
     auto sigma = svd.singularValues();
@@ -168,7 +166,8 @@ static void PrattSVD(const Eigen::Matrix<T, 2, Eigen::Dynamic>& data) {
     if (sigma(3) < epsilon) {
         // singular case: the solution A is the right singular vector, i.e., fourth column of V
         auto A = V(3);
-        // compute circle parameters.
+        // TODO: compute circle parameters.
+
         return;
     } else {
         // Y = V * sigma * V^T
@@ -189,28 +188,41 @@ static void PrattSVD(const Eigen::Matrix<T, 2, Eigen::Dynamic>& data) {
         Eigen::MatrixX<T> eigen_vectors = eigensolver.eigenvectors().real();
         std::vector<std::pair<T, Eigen::VectorX<T>>> eigen_pairs;
 
-        std::cout << eigen_values << std::endl;
-
         std::transform(eigen_values.begin(), eigen_values.end(), eigen_vectors.rowwise().begin(),
                 std::back_inserter(eigen_pairs), [&](T val, Eigen::VectorX<T> vec) {
             return std::make_pair(val, vec);
         });
 
-        // TODO: Instead of sorting the entire set of eigenpairs, it should be enough to just search for and
-        // return the smallest value, thus improving performance by reducing number of comparisons
+        // TODO: Instead of sorting, search for and return the smallest positive eigenpair
+        // Consider using std::min_element()
         std::sort(std::begin(eigen_pairs), std::end(eigen_pairs),
                 [&](const std::pair<T, Eigen::VectorX<T>>& a, const std::pair<T, Eigen::VectorX<T>>& b) {
             return std::get<0>(a) <= std::get<0>(b);
         });
 
         // Select the eigenpair (n, A_) with the smallest positive eigenvalue n
-        auto eigenPairSmallestN = eigen_pairs.front();
-        std::cout << eigenPairSmallestN.first << ", " << eigenPairSmallestN.second.transpose() << std::endl;
 
+        int index = 0;
+        std::pair<T, Eigen::VectorX<T>> eigenPairSmallestN;
+        do {
+            eigenPairSmallestN = eigen_pairs.at(index++);
+        } while (std::get<0>(eigenPairSmallestN) <= 0.0);
 
         // compute A = Y^-1 A_
+        auto A = Y.inverse() * std::get<1>(eigenPairSmallestN);
+
+        // TODO: Why does this correction produce more stable results?
+        auto A1_correction = -A(1)* 10;
+
         // compute circle parameters
-        return;
+        std::cout << "A correction : " << A1_correction << std::endl;
+        auto a = -A(1) / A(0)/2.0 + mean(0);
+        auto b = -A(2) / A(0)/2.0 + mean(1);
+        auto radius = std::sqrt(std::pow(A(1), 2) + std::pow(A(2), 2) -4*A(0)*A(3)) / std::abs(A(0))/2.0;
+        auto a_c = -A1_correction / A(0)/2.0 + mean(0);
+
+        std::cout << "Center point : " << a << ", " << b << std::endl;
+        std::cout << "Radius : " << radius << std::endl;
     }
 }
 
