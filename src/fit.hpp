@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Cholesky>
 #include <Eigen/SVD>
+#include <Eigen/Eigenvalues>
 
 namespace compass {
 
@@ -172,16 +173,41 @@ static void PrattSVD(const Eigen::Matrix<T, 2, Eigen::Dynamic>& data) {
     } else {
         // Y = V * sigma * V^T
         auto Y = V * sigma.asDiagonal() * V.transpose();
+
         Eigen::Matrix4<T> B;
         B << 0, 0, 0, -2,
              0, 1, 0,  0,
              0, 0, 1,  0,
             -2, 0, 0,  0;
 
-        auto result = Y * B.inverse() * Y;
-
         // compute Y * B^-1 * Y, where B is the constant constraint matrix
+        auto result = Y * B.inverse() * Y;
+        Eigen::EigenSolver<Eigen::MatrixX<T>> eigensolver;
+        eigensolver.compute(result);
+
+        Eigen::VectorX<T> eigen_values = eigensolver.eigenvalues().real();
+        Eigen::MatrixX<T> eigen_vectors = eigensolver.eigenvectors().real();
+        std::vector<std::pair<T, Eigen::VectorX<T>>> eigen_pairs;
+
+        std::cout << eigen_values << std::endl;
+
+        std::transform(eigen_values.begin(), eigen_values.end(), eigen_vectors.rowwise().begin(),
+                std::back_inserter(eigen_pairs), [&](T val, Eigen::VectorX<T> vec) {
+            return std::make_pair(val, vec);
+        });
+
+        // TODO: Instead of sorting the entire set of eigenpairs, it should be enough to just search for and
+        // return the smallest value, thus improving performance by reducing number of comparisons
+        std::sort(std::begin(eigen_pairs), std::end(eigen_pairs),
+                [&](const std::pair<T, Eigen::VectorX<T>>& a, const std::pair<T, Eigen::VectorX<T>>& b) {
+            return std::get<0>(a) <= std::get<0>(b);
+        });
+
         // Select the eigenpair (n, A_) with the smallest positive eigenvalue n
+        auto eigenPairSmallestN = eigen_pairs.front();
+        std::cout << eigenPairSmallestN.first << ", " << eigenPairSmallestN.second.transpose() << std::endl;
+
+
         // compute A = Y^-1 A_
         // compute circle parameters
         return;
