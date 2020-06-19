@@ -3,8 +3,10 @@
 
 #include <numeric>
 #include <algorithm>
+
 #include "data.hpp"
 #include "circle.hpp"
+
 #include <Eigen/Dense>
 #include <Eigen/Cholesky>
 #include <Eigen/SVD>
@@ -138,7 +140,7 @@ static void PrattNewton(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::Ro
     std::cout << "X: " << Xcenter + mean(0) << std::endl;
     std::cout << "Y: " << Ycenter + mean(1) << std::endl;
     std::cout << "Radius: " << sqrt(Xcenter*Xcenter + Ycenter*Ycenter + Mz + x + x) << std::endl;
-    }
+}
 
 static void PrattSVD(const Eigen::Matrix<T, 2, Eigen::Dynamic>& data) {
 
@@ -230,7 +232,31 @@ static void Nievergelt(const DataMatrix& data) {
     using GolubDesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 3>;
     Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
 
-    GolubDesignMatrix designMat;
+    GolubDesignMatrix designMat(data.cols(), 3);
+    auto golubDesignMatIt = designMat.rowwise().begin();
+    double Mz = 0.0;
+
+    for (const auto & col: data.colwise()) {
+        auto Xi = col(0) - mean(0);
+        auto Yi = col(1) - mean(1);
+        auto Z0 = std::pow(Xi, 2) + std::pow(Yi, 2);
+
+        Mz += Z0;
+        Eigen::Vector3<T> golubDesignMatRow{Z0, Xi, Yi};
+        *golubDesignMatIt = golubDesignMatRow;
+        golubDesignMatIt = std::next(golubDesignMatIt);
+    }
+
+    Mz /= data.cols();
+    std::cout << "Mean of Z: " << Mz << std::endl;
+    std::cout << "Design matrix with uncentered Z col : ";
+    std::cout << designMat << std::endl;
+
+    // TODO: Overwrite uncentered Z column with Z - Mz
+    designMat.col(0) -= Mz;
+
+    std::cout << "Centered design matrix : ";
+    std::cout << designMat << std::endl;
 }
 
 static void TaubinNewton(const DataMatrix& data) {}
