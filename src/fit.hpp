@@ -80,6 +80,26 @@ static void Kasa(const Eigen::Matrix<T, 2, Eigen::Dynamic, Eigen::RowMajor>& dat
     std::cout << fit << std::endl;
 }
 
+//TODO: Use ExtendedDesignMatrix here; clean up boilerplate
+static void KasaConsistent(const DataMatrix& data) {
+    DataMatrix3 matrix(3, data.cols());
+    Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
+
+    Eigen::MatrixX<T> centered = data.colwise() - mean;
+    Eigen::MatrixX<T> Z = centered.cwiseProduct(centered);
+    //Eigen::VectorX<T> Mz = Z.colwise().sum();
+    Eigen::RowVectorX<T> Mz = Z.colwise().sum();
+
+    std::cout << centered.rows() << ", " << centered.cols() << std::endl;
+    std::cout << Mz.size() << std::endl;
+    matrix << Mz, centered;
+    //matrix << Mz.transpose(), Mz.transpose(), centered; //Eigen::VectorX<T>::Ones(data.cols());
+    std::cout << matrix << std::endl;
+
+    //TODO: complete implementation here
+}
+
+
 static void PrattNewton(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>& data) {
     auto mean = Eigen::Vector2<T>(data.row(0).mean(), data.row(1).mean());
     auto colwiseData = data.colwise();
