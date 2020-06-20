@@ -229,34 +229,28 @@ static void PrattSVD(const Eigen::Matrix<T, 2, Eigen::Dynamic>& data) {
 }
 
 static void Nievergelt(const DataMatrix& data) {
-    using GolubDesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 3>;
+    using GolubDataMatrix = Eigen::Matrix<T, 3, Eigen::Dynamic>;
+    GolubDataMatrix designMat(3, data.cols());
+
     Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
+    auto centered = data.colwise() - mean;
 
-    GolubDesignMatrix designMat(data.cols(), 3);
-    auto golubDesignMatIt = designMat.rowwise().begin();
-    double Mz = 0.0;
+    auto centeredSquared = centered.cwiseProduct(centered);
+    auto Mzz = centeredSquared.colwise().sum();
 
-    for (const auto & col: data.colwise()) {
-        auto Xi = col(0) - mean(0);
-        auto Yi = col(1) - mean(1);
-        auto Z0 = std::pow(Xi, 2) + std::pow(Yi, 2);
+    auto Zmean = Mzz.mean();
+    auto Zcentered = Mzz.array() - Zmean;
 
-        Mz += Z0;
-        Eigen::Vector3<T> golubDesignMatRow{Z0, Xi, Yi};
-        *golubDesignMatIt = golubDesignMatRow;
-        golubDesignMatIt = std::next(golubDesignMatIt);
-    }
+    designMat << Zcentered, centered;
+    Eigen::BDCSVD<Eigen::MatrixX<T>> svd(designMat.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
 
-    Mz /= data.cols();
-    std::cout << "Mean of Z: " << Mz << std::endl;
-    std::cout << "Design matrix with uncentered Z col : ";
-    std::cout << designMat << std::endl;
+    auto V = svd.matrixV();
+    auto A = V.col(2);
+    auto A_4 = -Zmean * A(0);
 
-    // TODO: Overwrite uncentered Z column with Z - Mz
-    designMat.col(0) -= Mz;
-
-    std::cout << "Centered design matrix : ";
-    std::cout << designMat << std::endl;
+    auto a = -A(1)/A(0)/2.0 + mean(0);
+    auto b = -A(2)/A(0)/2.0 + mean(1);
+    auto radius = std::sqrt(std::pow(A(1), 2) + std::pow(A(2), 2) - 4*A(0)*A_4)/std::abs(A(0))/2.0;
 }
 
 static void TaubinNewton(const DataMatrix& data) {}
