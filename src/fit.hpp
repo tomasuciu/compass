@@ -27,6 +27,7 @@ struct Algebraic {
 using ExtendedDesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 4>; // N x 4
 using DesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 3>; // N x 3
 using DataMatrix = Eigen::Matrix<T, 2, Eigen::Dynamic, Eigen::RowMajor>; // 2 X N
+using DataMatrix3 = Eigen::Matrix<T, 3, Eigen::Dynamic>;
 
 static void Kasa(const Eigen::Matrix<T, 2, Eigen::Dynamic, Eigen::RowMajor>& data) {
     auto mean = Eigen::Vector2<T>(data.row(0).mean(), data.row(1).mean());
@@ -228,6 +229,7 @@ static void PrattSVD(const Eigen::Matrix<T, 2, Eigen::Dynamic>& data) {
     }
 }
 
+
 static void Nievergelt(const DataMatrix& data) {
     using GolubDataMatrix = Eigen::Matrix<T, 3, Eigen::Dynamic>;
     GolubDataMatrix designMat(3, data.cols());
@@ -253,8 +255,37 @@ static void Nievergelt(const DataMatrix& data) {
     auto radius = std::sqrt(std::pow(A(1), 2) + std::pow(A(2), 2) - 4*A(0)*A_4)/std::abs(A(0))/2.0;
 }
 
-static void TaubinNewton(const DataMatrix& data) {}
-static void TaubinSVD(const DataMatrix& data) {}
+
+static void TaubinNewton(const DataMatrix& data) {
+
+}
+
+static void TaubinSVD(const DataMatrix& data) {
+    DataMatrix3 matrix(3, data.cols());
+    Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
+    auto centered = data.colwise() - mean;
+    auto centeredSquared = centered.cwiseProduct(centered);
+    auto Mzz = centeredSquared.colwise().sum();
+    auto Zmean = Mzz.mean();
+    auto Zi = Mzz.array() - Zmean;
+    auto Zval = Zi/(2.0 * std::sqrt(Zmean));
+
+    matrix << Zval, centered;
+
+    Eigen::BDCSVD<Eigen::MatrixX<T>> svd(matrix.transpose(), Eigen::ComputeThinV);
+
+    auto V = svd.matrixV();
+    auto A = V.col(2);
+
+    auto A0 = A(0)/(2.0*std::sqrt(Zmean));
+    auto A_4 = -Zmean*A0;
+
+    auto a = -A(1)/A0/2.0 + mean(0);
+    auto b = -A(2)/A0/2.0 + mean(1);
+    auto radius = std::sqrt(std::pow(A(1), 2) + std::pow(A(2), 2) - 4*A0 * A_4)/std::abs(A0)/2.0;
+
+    std::cout << a << ", " << b << " | radius : " << radius << std::endl;
+}
 
 };
 
