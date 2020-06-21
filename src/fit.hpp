@@ -17,6 +17,10 @@ namespace compass {
 struct Geometric {
 static void LevenbergMarquardtFull() {}
 static void LevenbergMarquardtReduced() {}
+static void Trust(){}
+static void Spath(){}
+static void Landau(){}
+static void ChernovLesort(){}
 };
 
 template<typename T,
@@ -99,6 +103,7 @@ static void KasaConsistent(const DataMatrix& data) {
     //TODO: complete implementation here
 }
 
+static void KukushMarkovskyHuffel(const DataMatrix& data) {}
 
 static void PrattNewton(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>& data) {
     auto mean = Eigen::Vector2<T>(data.row(0).mean(), data.row(1).mean());
@@ -276,9 +281,7 @@ static void Nievergelt(const DataMatrix& data) {
 }
 
 
-static void TaubinNewton(const DataMatrix& data) {
-
-}
+static void TaubinNewton(const DataMatrix& data) {}
 
 static void TaubinSVD(const DataMatrix& data) {
     DataMatrix3 matrix(3, data.cols());
@@ -306,6 +309,10 @@ static void TaubinSVD(const DataMatrix& data) {
 
     std::cout << a << ", " << b << " | radius : " << radius << std::endl;
 }
+
+static void HyperSVD(const DataMatrix& data){}
+static void HyperSimple(const DataMatrix& data){}
+static void GanderGolubStrebel(const DataMatrix& data()){}
 
 };
 
