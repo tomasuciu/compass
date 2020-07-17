@@ -16,19 +16,69 @@
 #include <Eigen/Eigenvalues>
 
 namespace compass {
+using DataMatrixD = Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor>;
 
-struct Geometric {
-static void LevenbergMarquardtFull() {}
-static void LevenbergMarquardtReduced() {}
-static void Trust(){}
-static void Spath(){}
-static void Landau(){}
-static void ChernovLesort(){}
+template <typename Derived>
+struct FitBase {
+    Derived& derived() { return static_cast<Derived&>(*this); }
+    Derived const& derived() const { return static_cast<Derived const&>(*this); }
 };
+
+template<typename Derived>
+class AlgebraicFit : public FitBase<Derived> {
+    public:
+        AlgebraicFit& fit(const DataMatrixD& data);
+
+        inline Circle<double> getCircle() {
+            return circle;
+        }
+
+    protected:
+        // Useful for when AlgebraicFit::fit(const DataMatrix&) is used; mimics Eigen's API.
+        AlgebraicFit() : FitBase<Derived>() {}
+
+        AlgebraicFit(const DataMatrixD& data) : FitBase<Derived>(){
+            fit(data);
+        }
+
+
+    private:
+        Circle<double> circle;
+        Eigen::Matrix<double, 4, 4> N;
+};
+
+template<typename Derived>
+AlgebraicFit<Derived>& AlgebraicFit<Derived>::fit(const DataMatrixD& data) {
+    this->derived().fit(data);
+
+    return *this;
+}
+
+template <typename Derived>
+class GeometricFit : public FitBase<Derived> {
+    private:
+        // do something here
+    protected:
+        //also do something here
+
+};
+
+
+
+
+/*class GeometricFit {
+    static void LevenbergMarquardtFull() {}
+    static void LevenbergMarquardtReduced() {}
+    static void Trust(){}
+    static void Spath(){}
+    static void Landau(){}
+    static void ChernovLesort(){}
+};*/
+
+
 
 template<typename T,
 typename = std::enable_if_t<std::is_floating_point_v<T>>>
-
 struct Algebraic {
 
 using ExtendedDesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 4>; // N x 4
@@ -65,11 +115,12 @@ static void Kasa(const Eigen::Matrix<T, 2, Eigen::Dynamic, Eigen::RowMajor>& dat
     augMatrix << Mxx, Mxy, 0,
                  Mxy, Myy, 0,
                  0,   0,   1;
-
     auto solVector = Eigen::Vector<T, 3>(-Mxz, -Myz, 0);
-
+    std::cout << solVector << std::endl;
     Eigen::LDLT<Eigen::Matrix<T, 3, 3>> cholesky = augMatrix.ldlt();
     auto sol = cholesky.solve(solVector);
+    std::cout << "Old kasa sol: " << std::endl;
+    std::cout << sol << std::endl;
     auto B = -1 * sol(0)/2.0;
     auto C = -1 * sol(1)/2.0;
 
@@ -86,8 +137,6 @@ static void Kasa(const Eigen::Matrix<T, 2, Eigen::Dynamic, Eigen::RowMajor>& dat
 
     std::cout << fit << std::endl;
 }
-
-static void KasaNewton(const DataMatrix& data) {}
 
 //TODO: Use ExtendedDesignMatrix here; clean up boilerplate
 static void KasaConsistent(const DataMatrix& data) {
@@ -107,7 +156,6 @@ static void KasaConsistent(const DataMatrix& data) {
 
     //TODO: complete implementation here
 }
-
 static void KukushMarkovskyHuffel(const DataMatrix& data) {}
 
 static void PrattNewton(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>& data) {
@@ -259,7 +307,6 @@ static void PrattSVD(const Eigen::Matrix<T, 2, Eigen::Dynamic>& data) {
     }
 }
 
-
 static Circle<T> Nievergelt(const DataMatrix& data) {
     using GolubDataMatrix = Eigen::Matrix<T, 3, Eigen::Dynamic>;
     GolubDataMatrix designMat(3, data.cols());
@@ -286,7 +333,6 @@ static Circle<T> Nievergelt(const DataMatrix& data) {
 
     return Circle<T>(a, b, radius);
 }
-
 
 static void TaubinNewton(const DataMatrix& data) {
     Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
@@ -356,7 +402,6 @@ static void TaubinNewton(const DataMatrix& data) {
     double r = std::sqrt(std::pow(Xcenter, 2) + std::pow(Ycenter, 2) + Mz);
     std::cout << "(" << a << "," << b << ")" << std::endl;
     std::cout << "radius : " << r << std::endl;
-
 }
 
 static void TaubinSVD(const DataMatrix& data) {
