@@ -19,40 +19,50 @@ namespace compass {
 using DataMatrixD = Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor>;
 
 template <typename Derived>
-struct FitBase {
+struct FitCRTP {
     Derived& derived() { return static_cast<Derived&>(*this); }
     Derived const& derived() const { return static_cast<Derived const&>(*this); }
 };
 
+template <typename Derived>
+class FitBase : public FitCRTP<Derived> {
+    public:
+        FitBase& fit (Eigen::Ref<DataMatrixD> data) {
+            //this->mean = center<double>(data);
+            this->derived().fit(data);
+            return *this;
+        }
+
+        [[nodiscard]] inline Circle<double> getCircle() {
+            return this->derived().circle;
+        }
+
+    protected:
+        Eigen::RowVector2<double> mean;
+        Circle<double> circle;
+
+        FitBase() : FitCRTP<Derived>() {}
+        FitBase(Eigen::Ref<DataMatrixD> data) : FitCRTP<Derived>() {
+            fit(data);
+        }
+
+    private:
+        // do something here!
+};
+
+
 template<typename Derived>
 class AlgebraicFit : public FitBase<Derived> {
     public:
-        AlgebraicFit& fit(const DataMatrixD& data);
-
-        inline Circle<double> getCircle() {
-            return circle;
-        }
+        // implement local version of fit(...) based on generic algebraic fit literature
 
     protected:
         // Useful for when AlgebraicFit::fit(const DataMatrix&) is used; mimics Eigen's API.
         AlgebraicFit() : FitBase<Derived>() {}
-
-        AlgebraicFit(const DataMatrixD& data) : FitBase<Derived>(){
-            fit(data);
-        }
-
+        AlgebraicFit(Eigen::Ref<DataMatrixD> data) : FitBase<Derived>(data){}
 
     private:
-        Circle<double> circle;
-        Eigen::Matrix<double, 4, 4> N;
 };
-
-template<typename Derived>
-AlgebraicFit<Derived>& AlgebraicFit<Derived>::fit(const DataMatrixD& data) {
-    this->derived().fit(data);
-
-    return *this;
-}
 
 template <typename Derived>
 class GeometricFit : public FitBase<Derived> {
@@ -60,22 +70,16 @@ class GeometricFit : public FitBase<Derived> {
         // do something here
     protected:
         //also do something here
-
 };
 
-
-
-
-/*class GeometricFit {
+/*
     static void LevenbergMarquardtFull() {}
     static void LevenbergMarquardtReduced() {}
     static void Trust(){}
     static void Spath(){}
     static void Landau(){}
     static void ChernovLesort(){}
-};*/
-
-
+*/
 
 template<typename T,
 typename = std::enable_if_t<std::is_floating_point_v<T>>>
@@ -85,58 +89,6 @@ using ExtendedDesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 4>; // N x 4
 using DesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 3>; // N x 3
 using DataMatrix = Eigen::Matrix<T, 2, Eigen::Dynamic, Eigen::RowMajor>; // 2 X N
 using DataMatrix3 = Eigen::Matrix<T, 3, Eigen::Dynamic>;
-
-static void Kasa(const Eigen::Matrix<T, 2, Eigen::Dynamic, Eigen::RowMajor>& data) {
-    auto mean = Eigen::Vector2<T>(data.row(0).mean(), data.row(1).mean());
-    auto colwiseData = data.colwise();
-
-    auto Mxy=0.0, Mxx=0.0, Myy=0.0, Mxz=0.0, Myz=0.0;
-    std::for_each(colwiseData.begin(), colwiseData.end(), [&](const auto &column){
-
-        auto Xi = column(0) - mean(0);
-        auto Yi = column(1) - mean(1);
-        auto Zi = std::pow(Xi, 2) + std::pow(Yi, 2);
-
-        Mxx += std::pow(Xi, 2);
-        Myy += std::pow(Yi, 2);
-        Mxy += Xi * Yi;
-        Mxz += Xi * Zi;
-        Myz += Yi * Zi;
-    });
-
-    auto n = data.cols();
-    Mxx /= n;
-    Myy /= n;
-    Mxy /= n;
-    Mxz /= n;
-    Myz /= n;
-
-    Eigen::Matrix<T, 3, 3> augMatrix;
-    augMatrix << Mxx, Mxy, 0,
-                 Mxy, Myy, 0,
-                 0,   0,   1;
-    auto solVector = Eigen::Vector<T, 3>(-Mxz, -Myz, 0);
-    std::cout << solVector << std::endl;
-    Eigen::LDLT<Eigen::Matrix<T, 3, 3>> cholesky = augMatrix.ldlt();
-    auto sol = cholesky.solve(solVector);
-    std::cout << "Old kasa sol: " << std::endl;
-    std::cout << sol << std::endl;
-    auto B = -1 * sol(0)/2.0;
-    auto C = -1 * sol(1)/2.0;
-
-    Circle<T> fit;
-
-    fit.a = B + mean(0);
-    fit.b = C + mean(1);
-
-    //TODO: Fix
-    fit.radius = std::sqrt(std::pow(B, 2) + std::pow(C, 2));
-    fit.sigma = 0; //TODO: Implement
-    fit.i = 0;
-    fit.j = 0;
-
-    std::cout << fit << std::endl;
-}
 
 //TODO: Use ExtendedDesignMatrix here; clean up boilerplate
 static void KasaConsistent(const DataMatrix& data) {

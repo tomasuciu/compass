@@ -13,6 +13,14 @@ using DataMatrix3 = Eigen::Matrix<double, 3, Eigen::Dynamic, Eigen::RowMajor>;
 using DesignMatrix = Eigen::Matrix<double, Eigen::Dynamic, 3>;
 using ExtendedDesignMatrix = Eigen::Matrix<double, Eigen::Dynamic, 4>;
 
+/*template <typename T>
+[[nodiscard]] static DesignMatrix createDesignMatrix(Eigen::Ref<Eigen::MatrixX<double>> target) {
+    const int rows = target.rows();
+    return Eigen::Matrix<T, rows, target.cols() + 1> (Eigen::Matrix<T, rows, target.cols() + 1>()
+            << target, Eigen::MatrixX<T>::Ones(target.rows())).finished();
+
+}*/
+
 template <typename T>
 [[nodiscard]] static ExtendedDesignMatrix createExtendedDesignMatrix(const DataMatrix& data) {
     // TODO: Utilize the center(DataMatrix&) function instead
@@ -27,8 +35,15 @@ template <typename T>
     return dMat;
 }
 
-static void clamp(Eigen::Ref<Eigen::MatrixX<double>> target, float threshold = -1e-15) {
+static void clamp(Eigen::Ref<Eigen::MatrixX<double>> target, float threshold = 1e-15) {
     target = (threshold < target.array().abs()).select(target, 0.0f);
+}
+
+template <typename T>
+[[nodiscard]] static Eigen::RowVector2<T> center(Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor>> data) {
+    Eigen::RowVector2<T> mean {data.col(0).mean(), data.col(1).mean()};
+    data = data.rowwise() - mean;
+    return mean;
 }
 
 [[nodiscard]] static Eigen::Matrix<double, 4, 4> computeMatrixM(const DataMatrix& data){
@@ -40,12 +55,6 @@ static void clamp(Eigen::Ref<Eigen::MatrixX<double>> target, float threshold = -
     return M;
 }
 
-template <typename T>
-static Eigen::Vector2<T> center(DataMatrix& data) {
-    Eigen::Vector2<T> mean {data.row(0).mean(), data.row(1).mean()};
-    data.colwise() - mean;
-    return mean;
-}
 
 }
 
