@@ -97,15 +97,15 @@ class KasaConsistent : public AlgebraicFit<KasaConsistent> {
                 }
             }
 
-            Eigen::Matrix3i matN = (Eigen::Matrix3i()
+            Eigen::MatrixX<double> matN = (Eigen::MatrixX<double>(3, 3)
                     << n, 0, 0, 0, n, 0, 0, 0, 0).finished();
             std::cout << matN << std::endl;
 
             // [(uncentered^T * uncentered) - V] * matN
 
-            Eigen::MatrixX<double> des = uncentered.transpose() * uncentered;
-            Eigen::MatrixX<double> K = (des.array() - V).matrix() * matN;
-            std::cout << K << std::endl;
+            Eigen::MatrixX<double> des = (uncentered.transpose() * uncentered) - (V * matN);
+            std::cout << des << std::endl;
+            //std::cout << des * matN << std::endl;
             return *this;
         }
 };
