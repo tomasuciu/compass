@@ -53,27 +53,59 @@ class KasaConsistent : public AlgebraicFit<KasaConsistent> {
         KasaConsistent(Eigen::Ref<DataMatrixD> data) : AlgebraicFit<KasaConsistent>(data) {}
 
         KasaConsistent& fit (Eigen::Ref<DataMatrixD> data) {
-            this->mean = center<double>(data);
             size_t n = data.rows();
 
+            // uncentered matrices
             Eigen::VectorX<double> Z = (data.array().square()).rowwise().sum();
-            ExtendedDesignMatrix mat = (ExtendedDesignMatrix(data.rows(), 4)
+            ExtendedDesignMatrix mat = (ExtendedDesignMatrix(n, 4)
                     << Z, data, Eigen::VectorXd::Ones(n)).finished();
 
-            Eigen::MatrixX<double> smean = (mat.transpose() * mat).array() / n;
-            clamp(smean);
+            DesignMatrix uncentered = (DesignMatrix(n, 3)
+                    << data, Eigen::VectorXd::Ones(n)).finished();
+
+            Eigen::MatrixX<double> M0 = mat.transpose() * mat;
 
             Eigen::Matrix4<double> M1 = (Eigen::Matrix4<double>() <<
-                    8 * smean(0, 3), 4 * smean(1, 3), 4* smean(2, 3), 2 * n,
-                    4 * smean(1, 3), n, 0, 0,
-                    4 * smean(2, 3), 0, n, 0,
-                    2 * n, 0, 0, 0).finished();
+                    8 * M0(0, 3), 4 * M0(1, 3), 4* M0(2, 3), 2 * n, 4 * M0(1, 3), n, 0, 0,
+                    4 * M0(2, 3), 0, n, 0, 2 * n, 0, 0, 0).finished();
 
             Eigen::Matrix4<double> M2 = (Eigen::Matrix4<double>() <<
                     8 * n, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).finished();
 
-            double vmin = 0;
+            this->mean = center<double>(data);
+            Eigen::MatrixX<double> scatter = data.transpose() * data;
 
+            //TODO: experiment with Lanczos algorithm for finding smallest eigenvalue
+            Eigen::EigenSolver<Eigen::MatrixX<double>> solver;
+            solver.compute(scatter, false);
+            double Vmax = solver.eigenvalues().real().minCoeff();
+            double Vmin = 0.0;
+
+            //TODO: adjust tolerance
+            float epsilon = 0.00001 * Vmax;
+
+            double V = 0.0;
+            while (Vmax - Vmin > epsilon) {
+                V = (Vmin + Vmax)/2.0;
+                Eigen::MatrixX<double> M = M0 - M1*V + V*V*M2;
+                auto eig = M.eigenvalues();
+
+                if (eig.real().minCoeff() > 0) {
+                    Vmin = V;
+                } else {
+                    Vmax = V;
+                }
+            }
+
+            Eigen::Matrix3i matN = (Eigen::Matrix3i()
+                    << n, 0, 0, 0, n, 0, 0, 0, 0).finished();
+            std::cout << matN << std::endl;
+
+            // [(uncentered^T * uncentered) - V] * matN
+
+            Eigen::MatrixX<double> des = uncentered.transpose() * uncentered;
+            Eigen::MatrixX<double> K = (des.array() - V).matrix() * matN;
+            std::cout << K << std::endl;
             return *this;
         }
 };
