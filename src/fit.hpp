@@ -90,24 +90,6 @@ using DesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 3>; // N x 3
 using DataMatrix = Eigen::Matrix<T, 2, Eigen::Dynamic, Eigen::RowMajor>; // 2 X N
 using DataMatrix3 = Eigen::Matrix<T, 3, Eigen::Dynamic>;
 
-//TODO: Use ExtendedDesignMatrix here; clean up boilerplate
-static void KasaConsistent(const DataMatrix& data) {
-    DataMatrix3 matrix(3, data.cols());
-    Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
-
-    Eigen::MatrixX<T> centered = data.colwise() - mean;
-    Eigen::MatrixX<T> Z = centered.cwiseProduct(centered);
-    //Eigen::VectorX<T> Mz = Z.colwise().sum();
-    Eigen::RowVectorX<T> Mz = Z.colwise().sum();
-
-    std::cout << centered.rows() << ", " << centered.cols() << std::endl;
-    std::cout << Mz.size() << std::endl;
-    matrix << Mz, centered;
-    //matrix << Mz.transpose(), Mz.transpose(), centered; //Eigen::VectorX<T>::Ones(data.cols());
-    std::cout << matrix << std::endl;
-
-    //TODO: complete implementation here
-}
 static void KukushMarkovskyHuffel(const DataMatrix& data) {}
 
 static void PrattNewton(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>& data) {
