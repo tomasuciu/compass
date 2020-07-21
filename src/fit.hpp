@@ -69,12 +69,11 @@ class GeometricFit : public FitBase<Derived> {
     private:
         // do something here
     protected:
-        //also do something here
+        GeometricFit() : FitBase<Derived>() {}
+        GeometricFit(Eigen::Ref<DataMatrixD> data, Circle<double> guess) : FitBase<Derived>(data) {}
 };
 
 /*
-    static void LevenbergMarquardtFull() {}
-    static void LevenbergMarquardtReduced() {}
     static void Trust(){}
     static void Spath(){}
     static void Landau(){}
