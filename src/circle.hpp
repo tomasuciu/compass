@@ -3,6 +3,7 @@
 #define CIRCLE_H
 
 #include <iostream>
+#include <Eigen/Dense>
 
 namespace compass {
 
@@ -21,6 +22,10 @@ public:
         this->radius = radius;
     }
 
+    void setParameters(T a, T b, T x, T y) {
+
+    }
+
     friend std::ostream& operator<<(std::ostream& os, const Circle& circle) {
         return os << "Center: (" << circle.a << "," << circle.b << ")\n" <<
             "Radius: " << circle.radius << std::endl;
@@ -29,6 +34,15 @@ public:
 //            << "\nSigma: " << circle.sigma << "\nGradient: " << circle.grad << "\nIter: (" << circle.i
 //            << "," << circle.j << ")\n";
     }
+
+    // Temporary getter functions
+    const Eigen::Vector3<T> getVector() {
+        return Eigen::Vector3<T>(a, b, radius);
+    }
+
+    const inline T getA() const { return a; }
+    const inline T getB() const { return b; }
+    const inline T getRadius() const { return radius; }
 
 private:
     T a, b;     // coordinates of the center

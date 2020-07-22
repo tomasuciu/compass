@@ -55,6 +55,12 @@ template <typename T>
     return M;
 }
 
+//TODO: implement support for different norms - hence p parameter
+template <typename T>
+[[nodiscard]] static T computeNorm (Eigen::VectorX<double> vec, int p=2) {
+    return vec.cwiseAbs2().sum();
+}
+
 
 }
 
