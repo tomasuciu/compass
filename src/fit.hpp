@@ -1,6 +1,7 @@
 #ifndef FIT_HPP
 #define FIT_HPP
 
+#include <variant>
 #include <numeric>
 #include <algorithm>
 #include <random>
@@ -28,8 +29,14 @@ template <typename Derived>
 class FitBase : public FitCRTP<Derived> {
     public:
         FitBase& fit (Eigen::Ref<DataMatrixD> data) {
-            //this->mean = center<double>(data);
+            std::cout << "Algebraic fit() called" << std::endl;
             this->derived().fit(data);
+            return *this;
+        }
+
+        FitBase& fit (Eigen::Ref<DataMatrixD> data, Circle<double> guess) {
+            std::cout << "Geometric fit() called" << std::endl;
+            this->derived().fit(data, guess);
             return *this;
         }
 
@@ -41,36 +48,33 @@ class FitBase : public FitCRTP<Derived> {
         Eigen::RowVector2<double> mean;
         Circle<double> circle;
 
-        FitBase() : FitCRTP<Derived>() {}
-        FitBase(Eigen::Ref<DataMatrixD> data) : FitCRTP<Derived>() {
-            fit(data);
-        }
-
-    private:
-        // do something here!
+        FitBase() = default;
 };
 
 
 template<typename Derived>
 class AlgebraicFit : public FitBase<Derived> {
     public:
-        // implement local version of fit(...) based on generic algebraic fit literature
-
+        // TODO: Implement generic Algebraic fit()
     protected:
         // Useful for when AlgebraicFit::fit(const DataMatrix&) is used; mimics Eigen's API.
-        AlgebraicFit() : FitBase<Derived>() {}
-        AlgebraicFit(Eigen::Ref<DataMatrixD> data) : FitBase<Derived>(data){}
+        AlgebraicFit() {}
+        AlgebraicFit(Eigen::Ref<DataMatrixD> data) { //: FitBase<Derived>(){
+            this->derived().fit(data);
+        }
 
     private:
 };
 
 template <typename Derived>
 class GeometricFit : public FitBase<Derived> {
-    private:
-        // do something here
     protected:
-        GeometricFit() : FitBase<Derived>() {}
-        GeometricFit(Eigen::Ref<DataMatrixD> data, Circle<double> guess) : FitBase<Derived>(data) {}
+        GeometricFit() {}
+        GeometricFit(Eigen::Ref<DataMatrixD> data, Circle<double> guess) {
+            this->derived().fit(data, guess);
+        }
+
+    private:
 };
 
 /*
