@@ -13,9 +13,32 @@ class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull> {
 
         LevenbergMarquardtFull& fit (Eigen::Ref<DataMatrixD> data, Circle<double> initGuess, double lambda=1.0) {
             Circle<double> guess = initGuess;
-
             // intial computation of objective function and derivatives
             auto [J, g, F] = computeIteration(data, guess);
+
+            const int iterMax = 50;
+            const float epsilon = 0.000001;
+            // main loop, each run is one iteration
+            for (int i = 0; i < iterMax; ++i) {
+                // computation of lambda
+                while (true) {
+                    Eigen::MatrixXd DelPar = (Eigen::MatrixXd(J.rows() + 3, J.cols())
+                            << J, std::sqrt(lambda) * Eigen::MatrixXd::Identity(3, 3)).finished();
+
+                    Eigen::Vector<double, 9> rhs = (Eigen::Vector<double, 9>()
+                            << g, Eigen::Vector3d::Zero(3)).finished();
+
+                    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr = DelPar.colPivHouseholderQr();
+
+                    auto solution = qr.solve(rhs);
+                    auto progress = computeNorm<double>(solution)/(computeNorm<double>(guess.getVector()) + epsilon);
+                    std::cout << progress << std::endl;
+
+                    //auto sol = chol.solve(Eigen::VectorXd{g, Eigen::Vector3d::Zero(3)});
+                    //std::cout << sol << std:: endl;
+                    exit(1);
+                }
+            }
 
             return *this;
         }
@@ -33,8 +56,6 @@ class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull> {
             Eigen::VectorX<double> D = (Dx.cwiseProduct(Dx) + Dy.cwiseProduct(Dy)).cwiseSqrt();
             Eigen::MatrixX<double> J = (Eigen::MatrixX<double>(n, 3)
                     << - Dx.cwiseQuotient(D), -Dy.cwiseQuotient(D), Eigen::VectorX<double>::Ones(n)).finished();
-
-            std::cout << J << std::endl;
 
             Eigen::VectorX<double> g = D.array() - circle.getRadius();
             double F = std::pow(computeNorm<double>(g), 2);
