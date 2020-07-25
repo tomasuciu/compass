@@ -1,6 +1,7 @@
 #ifndef FIT_HPP
 #define FIT_HPP
 
+#include <any>
 #include <variant>
 #include <numeric>
 #include <algorithm>
@@ -63,23 +64,33 @@ class AlgebraicFit : public FitBase<Derived> {
             this->derived().fit(data);
         }
 
-    private:
+        void computeCircleParams(Eigen::Ref<const Eigen::MatrixXd> solution,
+                Eigen::Ref<const Eigen::RowVectorXd> mean) {
+            auto a = -solution(0) / 2.0 + mean(0);
+            auto b = -solution(1) / 2.0 + mean(1);
+            auto r = std::sqrt(std::pow(solution(0), 2) + std::pow(solution(1), 2));
+            this->derived().circle.setParameters(a, b, r);
+        }
 };
 
 template <typename Derived>
 class GeometricFit : public FitBase<Derived> {
     protected:
         GeometricFit() {}
+        GeometricFit(Eigen::Ref<DataMatrixD> data, std::any algebraicMethod) {
+            // use std::visit and CRTP to compute the initial guess; pass the class as an argument and then
+            // fit. After the Circle<double> object is obtained, pass that into the constructor below as such:
+            // GeometricFit(data, algebraicMethodGuess);
+
+            //compute the intial guess using one of the algebraic fit methods, Taubin by default
+        }
         GeometricFit(Eigen::Ref<DataMatrixD> data, Circle<double> guess) {
             this->derived().fit(data, guess);
         }
-
-    private:
 };
 
 /*
     static void Trust(){}
-    static void Spath(){}
     static void Landau(){}
     static void ChernovLesort(){}
 */
@@ -156,92 +167,6 @@ static void PrattNewton(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::Ro
     std::cout << "X: " << Xcenter + mean(0) << std::endl;
     std::cout << "Y: " << Ycenter + mean(1) << std::endl;
     std::cout << "Radius: " << sqrt(Xcenter*Xcenter + Ycenter*Ycenter + Mz + x + x) << std::endl;
-}
-
-static void PrattSVD(const Eigen::Matrix<T, 2, Eigen::Dynamic>& data) {
-
-    Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
-
-    ExtendedDesignMatrix designMat(data.cols(), 4);
-
-    auto designMatIt = designMat.rowwise().begin();
-    for (const auto & col: data.colwise()) {
-        auto Xi = col(0) - mean(0);
-        auto Yi = col(1) - mean(1);
-        auto Zi = std::pow(Xi, 2) + std::pow(Yi, 2);
-        Eigen::Vector4<T> designMatRow{Zi, Xi, Yi, 1.0};
-
-        *designMatIt = designMatRow;
-        designMatIt = std::next(designMatIt);
-    }
-
-    Eigen::BDCSVD<Eigen::MatrixX<T>> svd(designMat, Eigen::ComputeThinU | Eigen::ComputeThinV);
-
-    auto sigma = svd.singularValues();
-    auto V = svd.matrixV();
-
-    const double epsilon = 1.0e-13;
-    if (sigma(3) < epsilon) {
-        // singular case: the solution A is the right singular vector, i.e., fourth column of V
-        auto A = V(3);
-        // TODO: compute circle parameters.
-
-        return;
-    } else {
-        // Y = V * sigma * V^T
-        auto Y = V * sigma.asDiagonal() * V.transpose();
-
-        Eigen::Matrix4<T> B;
-        B << 0, 0, 0, -2,
-             0, 1, 0,  0,
-             0, 0, 1,  0,
-            -2, 0, 0,  0;
-
-        // compute Y * B^-1 * Y, where B is the constant constraint matrix
-        auto result = Y * B.inverse() * Y;
-        Eigen::EigenSolver<Eigen::MatrixX<T>> eigensolver;
-        eigensolver.compute(result);
-
-        Eigen::VectorX<T> eigen_values = eigensolver.eigenvalues().real();
-        Eigen::MatrixX<T> eigen_vectors = eigensolver.eigenvectors().real();
-        std::vector<std::pair<T, Eigen::VectorX<T>>> eigen_pairs;
-
-        std::transform(eigen_values.begin(), eigen_values.end(), eigen_vectors.rowwise().begin(),
-                std::back_inserter(eigen_pairs), [&](T val, Eigen::VectorX<T> vec) {
-            return std::make_pair(val, vec);
-        });
-
-        // TODO: Instead of sorting, search for and return the smallest positive eigenpair
-        // Consider using std::min_element()
-        std::sort(std::begin(eigen_pairs), std::end(eigen_pairs),
-                [&](const std::pair<T, Eigen::VectorX<T>>& a, const std::pair<T, Eigen::VectorX<T>>& b) {
-            return std::get<0>(a) <= std::get<0>(b);
-        });
-
-        // Select the eigenpair (n, A_) with the smallest positive eigenvalue n
-
-        int index = 0;
-        std::pair<T, Eigen::VectorX<T>> eigenPairSmallestN;
-        do {
-            eigenPairSmallestN = eigen_pairs.at(index++);
-        } while (std::get<0>(eigenPairSmallestN) <= 0.0);
-
-        // compute A = Y^-1 A_
-        auto A = Y.inverse() * std::get<1>(eigenPairSmallestN);
-
-        // TODO: Why does this correction produce more stable results?
-        auto A1_correction = -A(1)* 10;
-
-        // compute circle parameters
-        std::cout << "A correction : " << A1_correction << std::endl;
-        auto a = -A(1) / A(0)/2.0 + mean(0);
-        auto b = -A(2) / A(0)/2.0 + mean(1);
-        auto radius = std::sqrt(std::pow(A(1), 2) + std::pow(A(2), 2) -4*A(0)*A(3)) / std::abs(A(0))/2.0;
-        auto a_c = -A1_correction / A(0)/2.0 + mean(0);
-
-        std::cout << "Center point : " << a << ", " << b << std::endl;
-        std::cout << "Radius : " << radius << std::endl;
-    }
 }
 
 static Circle<T> Nievergelt(const DataMatrix& data) {
