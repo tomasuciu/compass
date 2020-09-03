@@ -22,9 +22,7 @@ public:
         this->radius = radius;
     }
 
-    void setParameters(T a, T b, T x, T y) {
-
-    }
+    void setParameters(T a, T b, T x, T y) {}
 
     friend std::ostream& operator<<(std::ostream& os, const Circle& circle) {
         return os << "Center: (" << circle.a << "," << circle.b << ")\n" <<

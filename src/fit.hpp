@@ -42,6 +42,7 @@ class FitBase : public FitCRTP<Derived> {
         }
 
         [[nodiscard]] inline Circle<double> getCircle() {
+            std::cout << "CRTP getCircle() called" << std::endl;
             return this->derived().circle;
         }
 
@@ -49,27 +50,33 @@ class FitBase : public FitCRTP<Derived> {
         Eigen::RowVector2<double> mean;
         Circle<double> circle;
 
-        FitBase() = default;
+        FitBase() {}
+        FitBase(Eigen::Ref<DataMatrixD> data){
+            fit(data);
+        }
 };
 
 
+// TODO: Consider implementing generalized algebraic fits.
 template<typename Derived>
 class AlgebraicFit : public FitBase<Derived> {
     public:
-        // TODO: Implement generic Algebraic fit()
-    protected:
-        // Useful for when AlgebraicFit::fit(const DataMatrix&) is used; mimics Eigen's API.
-        AlgebraicFit() {}
-        AlgebraicFit(Eigen::Ref<DataMatrixD> data) { //: FitBase<Derived>(){
-            this->derived().fit(data);
-        }
+        AlgebraicFit() : FitBase<Derived>() {}
+        AlgebraicFit(Eigen::Ref<DataMatrixD> data) : FitBase<Derived>(data) {}
 
+    protected:
         void computeCircleParams(Eigen::Ref<const Eigen::MatrixXd> solution,
                 Eigen::Ref<const Eigen::RowVectorXd> mean) {
+
             auto a = -solution(0) / 2.0 + mean(0);
             auto b = -solution(1) / 2.0 + mean(1);
             auto r = std::sqrt(std::pow(solution(0), 2) + std::pow(solution(1), 2));
+
             this->derived().circle.setParameters(a, b, r);
+        }
+
+        void computeCircleParams(Eigen::Ref<const Eigen::MatrixXd> solution) {
+            computeCircleParams(solution, Eigen::RowVector2d::Zero());
         }
 };
 

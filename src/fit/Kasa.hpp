@@ -7,8 +7,7 @@ namespace compass {
 
 class Kasa : public AlgebraicFit<Kasa> {
     public:
-        Kasa() : AlgebraicFit<Kasa>() {}
-        Kasa(Eigen::Ref<DataMatrixD> data) : AlgebraicFit<Kasa>(data) {}
+        using AlgebraicFit<Kasa>::AlgebraicFit;
 
         Kasa& fit (Eigen::Ref<DataMatrixD> data) {
             this->mean = center<double>(data);
@@ -42,7 +41,6 @@ class Kasa : public AlgebraicFit<Kasa> {
             double B = -solVector(0) / 2.0;
             double C = -solVector(1) / 2.0;
             double radius = std::sqrt(std::pow(B, 2) + std::pow(C, 2));
-
             circle.setParameters(B + mean(0), C + mean(1), radius);
         }
 };
