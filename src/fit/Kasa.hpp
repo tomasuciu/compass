@@ -9,11 +9,8 @@ class Kasa : public AlgebraicFit<Kasa> {
     public:
         using AlgebraicFit<Kasa>::AlgebraicFit;
 
-        Kasa& fit (Eigen::Ref<DataMatrixD> data) {
-            this->mean = center<double>(data);
-
-            //TODO: handle unnecessary copy here
-            Eigen::MatrixX<double> centered = data;
+        Kasa& fit (const Eigen::Ref<const DataMatrixD>& data) {
+            Eigen::MatrixX<double> centered = data.rowwise() - mean;
 
             Eigen::VectorX<double> Z = (centered.array().square()).rowwise().sum();
             DesignMatrix mat = (DesignMatrix(centered.rows(), 3)
@@ -48,9 +45,9 @@ class Kasa : public AlgebraicFit<Kasa> {
 class KasaConsistent : public AlgebraicFit<KasaConsistent> {
     public:
         KasaConsistent() : AlgebraicFit<KasaConsistent>() {}
-        KasaConsistent(Eigen::Ref<DataMatrixD> data) : AlgebraicFit<KasaConsistent>(data) {}
+        KasaConsistent(const Eigen::Ref<const DataMatrixD>& data) : AlgebraicFit<KasaConsistent>(data) {}
 
-        KasaConsistent& fit (Eigen::Ref<DataMatrixD> data) {
+        KasaConsistent& fit (const Eigen::Ref<const DataMatrixD>& data) {
             size_t n = data.rows();
 
             // uncentered matrices
@@ -70,7 +67,6 @@ class KasaConsistent : public AlgebraicFit<KasaConsistent> {
             Eigen::Matrix4<double> M2 = (Eigen::Matrix4<double>() <<
                     8 * n, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).finished();
 
-            this->mean = center<double>(data);
             Eigen::MatrixX<double> scatter = data.transpose() * data;
 
             //TODO: experiment with Lanczos algorithm for finding smallest eigenvalue

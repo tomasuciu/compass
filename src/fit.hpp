@@ -29,13 +29,13 @@ struct FitCRTP {
 template <typename Derived>
 class FitBase : public FitCRTP<Derived> {
     public:
-        FitBase& fit (Eigen::Ref<DataMatrixD> data) {
+        FitBase& fit (const Eigen::Ref<const DataMatrixD>& data) {
             std::cout << "Algebraic fit() called" << std::endl;
             this->derived().fit(data);
             return *this;
         }
 
-        FitBase& fit (Eigen::Ref<DataMatrixD> data, Circle<double> guess) {
+        FitBase& fit (const Eigen::Ref<const DataMatrixD>& data, Circle<double> guess) {
             std::cout << "Geometric fit() called" << std::endl;
             this->derived().fit(data, guess);
             return *this;
@@ -51,7 +51,9 @@ class FitBase : public FitCRTP<Derived> {
         Circle<double> circle;
 
         FitBase() {}
-        FitBase(Eigen::Ref<DataMatrixD> data){
+        FitBase(const Eigen::Ref<const DataMatrixD>& data){
+            this->mean = data.colwise().mean();
+
             fit(data);
         }
 };
@@ -62,7 +64,7 @@ template<typename Derived>
 class AlgebraicFit : public FitBase<Derived> {
     public:
         AlgebraicFit() : FitBase<Derived>() {}
-        AlgebraicFit(Eigen::Ref<DataMatrixD> data) : FitBase<Derived>(data) {}
+        AlgebraicFit(const Eigen::Ref<const DataMatrixD>& data) : FitBase<Derived>(data) {}
 
     protected:
         void computeCircleParams(Eigen::Ref<const Eigen::MatrixXd> solution,

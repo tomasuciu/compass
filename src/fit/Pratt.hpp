@@ -9,10 +9,10 @@ namespace compass {
 class PrattSVD : public AlgebraicFit<PrattSVD> {
     public:
         PrattSVD() : AlgebraicFit<PrattSVD>() {}
-        PrattSVD(Eigen::Ref<DataMatrixD> data) : AlgebraicFit<PrattSVD>(data) {}
+        PrattSVD(const Eigen::Ref<const DataMatrixD>& data) : AlgebraicFit<PrattSVD>(data) {}
 
-        PrattSVD& fit(Eigen::Ref<DataMatrixD> data) {
-            this->mean = center<double>(data);
+        PrattSVD& fit(const Eigen::Ref<const DataMatrixD>& data) {
+            //this->mean = center<double>(data);
             Eigen::MatrixX<double> centered = data;
 
             Eigen::VectorX<double> Z = (centered.array().square()).rowwise().sum();
@@ -24,8 +24,7 @@ class PrattSVD : public AlgebraicFit<PrattSVD> {
             Eigen::VectorX<double> S = svd.singularValues();
 
             if (S.minCoeff() < 1e-12) {
-                // TODO: compute circle parameters
-                // singular case, compute circle parameters from A
+               // Eigen::VectorXd sol = V(
             } else {
                 Eigen::MatrixX<double> W = V * S.asDiagonal();
 
@@ -40,7 +39,7 @@ class PrattSVD : public AlgebraicFit<PrattSVD> {
 
                 // (W^T * B^-1 * W) will only have one negative eigenvector, hence the smallest nonnegative
                 // eigenvector must be the second (1st col)
-
+                std::cout << eigenvalues << std::endl;
                 Eigen::Vector4d smallestPositiveEigenvector = eigenvectors.col(1);
 
                 Eigen::MatrixXd scaled = Eigen::Vector4d::Ones().cwiseQuotient(S).asDiagonal();
