@@ -62,7 +62,7 @@ class FitBase : public FitCRTP<Derived> {
 // TODO: Consider implementing generalized algebraic fits.
 template<typename Derived>
 class AlgebraicFit : public FitBase<Derived> {
-    public:
+    protected:
         AlgebraicFit() : FitBase<Derived>() {}
         AlgebraicFit(const Eigen::Ref<const DataMatrixD>& data) : FitBase<Derived>(data) {}
 
@@ -87,6 +87,7 @@ class GeometricFit : public FitBase<Derived> {
     protected:
         GeometricFit() {}
         GeometricFit(Eigen::Ref<DataMatrixD> data, std::any algebraicMethod) {
+            //std::variant<AlgebraicFit<Kasa>> var;
             // use std::visit and CRTP to compute the initial guess; pass the class as an argument and then
             // fit. After the Circle<double> object is obtained, pass that into the constructor below as such:
             // GeometricFit(data, algebraicMethodGuess);
@@ -343,8 +344,6 @@ static void TaubinNystromSVD(const DataMatrix& data) {
 }
 
 
-static void HyperSVD(const DataMatrix& data){}
-static void HyperSimple(const DataMatrix& data){}
 static void GanderGolubStrebel(const DataMatrix& data()){}
 
 };

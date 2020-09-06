@@ -24,7 +24,7 @@ class PrattSVD : public AlgebraicFit<PrattSVD> {
             Eigen::VectorX<double> S = svd.singularValues();
 
             if (S.minCoeff() < 1e-12) {
-               // Eigen::VectorXd sol = V(
+                // Solve idealized case here, TODO!
             } else {
                 Eigen::MatrixX<double> W = V * S.asDiagonal();
 

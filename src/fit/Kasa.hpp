@@ -6,8 +6,10 @@
 namespace compass {
 
 class Kasa : public AlgebraicFit<Kasa> {
+        friend class AlgebraicFit<Kasa>;
     public:
-        using AlgebraicFit<Kasa>::AlgebraicFit;
+        Kasa() : AlgebraicFit<Kasa>() {}
+        Kasa(const Eigen::Ref<const DataMatrixD>& data) : AlgebraicFit<Kasa>(data) {}
 
         Kasa& fit (const Eigen::Ref<const DataMatrixD>& data) {
             Eigen::MatrixX<double> centered = data.rowwise() - mean;
