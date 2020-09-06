@@ -46,6 +46,7 @@ template <typename T>
     return mean;
 }
 
+
 [[nodiscard]] static Eigen::Matrix<double, 4, 4> computeMatrixM(const DataMatrix& data){
     ExtendedDesignMatrix designMat = createExtendedDesignMatrix<double>(data);
     Eigen::Matrix<double, 4, 4> M = (designMat.transpose() * designMat).array() / data.cols();
@@ -61,6 +62,11 @@ template <typename T>
     return vec.cwiseAbs2().sum();
 }
 
+// Assume matrix is valid, TODO: implement check
+template <typename Derived>
+[[nodiscard]] static std::pair<size_t, size_t> getEigenDims (const Eigen::EigenBase<Derived>& mat) {
+    return std::make_pair(mat.rows(), mat.cols());
+}
 
 }
 

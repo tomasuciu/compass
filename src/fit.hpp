@@ -275,33 +275,6 @@ static void TaubinNewton(const DataMatrix& data) {
     std::cout << "radius : " << r << std::endl;
 }
 
-static void TaubinSVD(const DataMatrix& data) {
-    DataMatrix3 matrix(3, data.cols());
-    Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
-    auto centered = data.colwise() - mean;
-    auto centeredSquared = centered.cwiseProduct(centered);
-    auto Mzz = centeredSquared.colwise().sum();
-    auto Zmean = Mzz.mean();
-    auto Zi = Mzz.array() - Zmean;
-    auto Zval = Zi/(2.0 * std::sqrt(Zmean));
-
-    matrix << Zval, centered;
-
-    Eigen::BDCSVD<Eigen::MatrixX<T>> svd(matrix.transpose(), Eigen::ComputeThinV);
-
-    auto V = svd.matrixV();
-    std::cout << "Regular SVD: \n" << V << std::endl;
-    auto A = V.col(2);
-
-    auto A0 = A(0)/(2.0*std::sqrt(Zmean));
-    auto A_4 = -Zmean*A0;
-
-    auto a = -A(1)/A0/2.0 + mean(0);
-    auto b = -A(2)/A0/2.0 + mean(1);
-    auto radius = std::sqrt(std::pow(A(1), 2) + std::pow(A(2), 2) - 4*A0 * A_4)/std::abs(A0)/2.0;
-
-    std::cout << a << ", " << b << " | radius : " << radius << std::endl;
-}
 
 //TODO: Debug Nystrom functionality; not currently working
 static void TaubinNystromSVD(const DataMatrix& data) {
