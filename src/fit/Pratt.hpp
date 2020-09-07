@@ -12,8 +12,7 @@ class PrattSVD : public AlgebraicFit<PrattSVD> {
         PrattSVD(const Eigen::Ref<const DataMatrixD>& data) : AlgebraicFit<PrattSVD>(data) {}
 
         PrattSVD& fit(const Eigen::Ref<const DataMatrixD>& data) {
-            //this->mean = center<double>(data);
-            Eigen::MatrixX<double> centered = data;
+            Eigen::MatrixX<double> centered = data.rowwise() - mean;
 
             Eigen::VectorX<double> Z = (centered.array().square()).rowwise().sum();
             ExtendedDesignMatrix mat = (ExtendedDesignMatrix(centered.rows(), 4)
@@ -28,6 +27,7 @@ class PrattSVD : public AlgebraicFit<PrattSVD> {
             } else {
                 Eigen::MatrixX<double> W = V * S.asDiagonal();
 
+                std::cout << W << std::endl;
                 Eigen::MatrixX<double> Binv = (Eigen::Matrix4<double>(4, 4)
                         << 0, 0, 0, -0.5, 0, 1, 0, 0, 0, 0, 1, 0, -0.5, 0, 0, 0).finished();
 
@@ -35,12 +35,9 @@ class PrattSVD : public AlgebraicFit<PrattSVD> {
 
                 solver.compute(W.transpose() * Binv * W);
                 Eigen::MatrixXd eigenvectors = solver.eigenvectors();
-                Eigen::VectorXd eigenvalues = solver.eigenvalues();
 
-                // (W^T * B^-1 * W) will only have one negative eigenvector, hence the smallest nonnegative
-                // eigenvector must be the second (1st col)
-                std::cout << eigenvalues << std::endl;
                 Eigen::Vector4d smallestPositiveEigenvector = eigenvectors.col(1);
+                std::cout << "\n\n" << smallestPositiveEigenvector << std::endl;
 
                 Eigen::MatrixXd scaled = Eigen::Vector4d::Ones().cwiseQuotient(S).asDiagonal();
 

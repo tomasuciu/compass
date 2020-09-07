@@ -6,7 +6,6 @@
 namespace compass {
 
 class Kasa : public AlgebraicFit<Kasa> {
-        friend class AlgebraicFit<Kasa>;
     public:
         Kasa() : AlgebraicFit<Kasa>() {}
         Kasa(const Eigen::Ref<const DataMatrixD>& data) : AlgebraicFit<Kasa>(data) {}
