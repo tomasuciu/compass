@@ -52,6 +52,51 @@ class HyperSVD : public AlgebraicFit<HyperSVD> {
         }
 
 };
+
+class HyperSimple : public AlgebraicFit<HyperSimple> {
+    public:
+        HyperSimple() : AlgebraicFit<HyperSimple>() {}
+        HyperSimple(const Eigen::Ref<const DataMatrixD>& data) : AlgebraicFit<HyperSimple>(data) {}
+
+        HyperSimple& fit (const Eigen::Ref<const DataMatrixD>& data) {
+            Eigen::MatrixX<double> centered = data;
+
+            Eigen::VectorX<double> Z = (centered.array().square()).rowwise().sum();
+            ExtendedDesignMatrix mat = (ExtendedDesignMatrix(centered.rows(), 4)
+                    << Z, centered, Eigen::VectorXd::Ones(centered.rows())).finished();
+
+            Eigen::RowVectorX<double> S = mat.colwise().mean();
+            Eigen::MatrixX<double> M = mat.transpose() * mat;
+
+            Eigen::MatrixX<double> N = (Eigen::Matrix4<double>(4, 4)
+                    << 8*S(0), 4*S(1), 4*S(2), 2, 4*S(1), 1, 0, 0, 4*S(2), 0, 1, 0, 2, 0, 0, 0).finished();
+
+            Eigen::MatrixX<double> NM = N.inverse() * M;
+
+            Eigen::EigenSolver<Eigen::MatrixXd> solver;
+            solver.compute(NM);
+
+            Eigen::MatrixXd eigenvectors = solver.eigenvectors().real();
+            Eigen::VectorXd eigenvalues = solver.eigenvalues().real();
+
+            // throw an exception and cancel execution
+            if (eigenvalues(0) > 0) {
+                std::cout << "Error, the smallest eigenvalue is positive" << std::endl;
+            } else if (eigenvalues(1) < 0) {
+                std::cout << "Error, the second smallest eigenvalue is negative" << std::endl;
+            }
+
+            Eigen::Vector4d AStar = eigenvectors.col(eigenvectors.cols() - 1);
+
+            auto a = -AStar(1)/AStar(0)/2.0;
+            auto b = -AStar(2)/AStar(0)/2.0;
+
+            auto radius = std::sqrt(std::pow(AStar(1), 2) + std::pow(AStar(2), 2) -4*AStar(0)*AStar(3)) / std::abs(AStar(0))/2.0;
+            std::cout << a << ", " << b << ", " << radius << std::endl;
+            return *this;
+
+        }
+};
 }
 
 #endif /* HYPER_HPP */
