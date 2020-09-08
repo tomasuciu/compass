@@ -5,11 +5,12 @@
 
 namespace compass {
 
-class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull> {
+template<class A>
+class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull<A>, A> {
     public:
-        LevenbergMarquardtFull(double lambda=1.0) : GeometricFit<LevenbergMarquardtFull>(), lambda(lambda) {}
+        LevenbergMarquardtFull(double lambda=1.0) : GeometricFit<LevenbergMarquardtFull<A>, A>(), lambda(lambda) {}
         LevenbergMarquardtFull(Eigen::Ref<DataMatrixD> data, Circle<double> guess, double lambda=1.0)
-            : GeometricFit<LevenbergMarquardtFull>(data, guess), lambda(lambda) {}
+            : GeometricFit<LevenbergMarquardtFull<A>, A>(data, guess), lambda(lambda) {}
 
         LevenbergMarquardtFull& fit (Eigen::Ref<DataMatrixD> data, Circle<double> initGuess, double lambda=1.0) {
             Circle<double> guess = initGuess;
@@ -34,8 +35,6 @@ class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull> {
                     auto progress = computeNorm<double>(solution)/(computeNorm<double>(guess.getVector()) + epsilon);
                     std::cout << progress << std::endl;
 
-                    //auto sol = chol.solve(Eigen::VectorXd{g, Eigen::Vector3d::Zero(3)});
-                    //std::cout << sol << std:: endl;
                     exit(1);
                 }
             }
@@ -64,7 +63,8 @@ class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull> {
         }
 };
 
-class LevenbergMarquardtReduced : public GeometricFit<LevenbergMarquardtReduced> {};
+template<class A>
+class LevenbergMarquardtReduced : public GeometricFit<LevenbergMarquardtReduced<A>, A> {};
 
 }
 

@@ -82,28 +82,13 @@ class AlgebraicFit : public FitBase<Derived> {
         }
 };
 
-template <typename Derived>
-class GeometricFit : public FitBase<Derived> {
+template <typename Derived, class A,
+         class = std::enable_if_t<std::is_base_of_v<AlgebraicFit<A>, A>>>
+class GeometricFit: public FitBase<GeometricFit<Derived, A>> {
     protected:
         GeometricFit() {}
-        GeometricFit(Eigen::Ref<DataMatrixD> data, std::any algebraicMethod) {
-            //std::variant<AlgebraicFit<Kasa>> var;
-            // use std::visit and CRTP to compute the initial guess; pass the class as an argument and then
-            // fit. After the Circle<double> object is obtained, pass that into the constructor below as such:
-            // GeometricFit(data, algebraicMethodGuess);
-
-            //compute the intial guess using one of the algebraic fit methods, Taubin by default
-        }
-        GeometricFit(Eigen::Ref<DataMatrixD> data, Circle<double> guess) {
-            this->derived().fit(data, guess);
-        }
+        GeometricFit(const Eigen::Ref<const DataMatrixD>& data, std::any algMethod) {}
 };
-
-/*
-    static void Trust(){}
-    static void Landau(){}
-    static void ChernovLesort(){}
-*/
 
 template<typename T,
 typename = std::enable_if_t<std::is_floating_point_v<T>>>
