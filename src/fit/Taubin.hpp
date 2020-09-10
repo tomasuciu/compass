@@ -5,11 +5,14 @@
 
 namespace compass {
 class TaubinSVD : public AlgebraicFit<TaubinSVD> {
+    friend class AlgebraicFit<TaubinSVD>;
+
     public:
         TaubinSVD() : AlgebraicFit<TaubinSVD>() {}
         TaubinSVD(const Eigen::Ref<const DataMatrixD>& data) : AlgebraicFit<TaubinSVD>(data) {}
 
-        TaubinSVD& fit (const Eigen::Ref<const DataMatrixD>& data) {
+    protected:
+        TaubinSVD& compute (const Eigen::Ref<const DataMatrixD>& data) {
             Eigen::MatrixX<double> centered = data.rowwise() - mean;
             Eigen::VectorX<double> Z = (centered.array().square()).rowwise().sum();
             Eigen::VectorX<double> Z0 = (Z.array() - Z.mean()) / (2 * std::sqrt(Z.mean()));
@@ -37,7 +40,9 @@ class TaubinSVD : public AlgebraicFit<TaubinSVD> {
 class TaubinNewton : public AlgebraicFit<TaubinNewton> {
     public:
         using AlgebraicFit<TaubinNewton>::AlgebraicFit;
-        TaubinNewton& fit (const Eigen::Ref<const DataMatrixD>& data) {
+
+    protected:
+        TaubinNewton& compute (const Eigen::Ref<const DataMatrixD>& data) {
             return *this;
         }
 };

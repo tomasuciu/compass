@@ -3,14 +3,18 @@
 
 //TODO: Temporary, eventually specify /I flag with CMake
 #include "../fit.hpp"
+
 namespace compass {
 
 class Kasa : public AlgebraicFit<Kasa> {
+    friend class AlgebraicFit< Kasa >;
+
     public:
         Kasa() : AlgebraicFit<Kasa>() {}
         Kasa(const Eigen::Ref<const DataMatrixD>& data) : AlgebraicFit<Kasa>(data) {}
 
-        Kasa& fit (const Eigen::Ref<const DataMatrixD>& data) {
+    protected:
+        Kasa& compute (const Eigen::Ref<const DataMatrixD>& data) {
             Eigen::MatrixX<double> centered = data.rowwise() - mean;
 
             Eigen::VectorX<double> Z = (centered.array().square()).rowwise().sum();
@@ -44,11 +48,16 @@ class Kasa : public AlgebraicFit<Kasa> {
 };
 
 class KasaConsistent : public AlgebraicFit<KasaConsistent> {
-    public:
-        KasaConsistent() : AlgebraicFit<KasaConsistent>() {}
-        KasaConsistent(const Eigen::Ref<const DataMatrixD>& data) : AlgebraicFit<KasaConsistent>(data) {}
+    friend class AlgebraicFit<KasaConsistent>;
 
-        KasaConsistent& fit (const Eigen::Ref<const DataMatrixD>& data) {
+    public:
+        typedef AlgebraicFit<KasaConsistent> Base;
+
+        KasaConsistent() : Base() {}
+        KasaConsistent(const Eigen::Ref<const DataMatrixD>& data) : Base(data) {}
+
+    protected:
+        KasaConsistent& compute (const Eigen::Ref<const DataMatrixD>& data) {
             size_t n = data.rows();
 
             // uncentered matrices

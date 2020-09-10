@@ -1,6 +1,7 @@
 #ifndef FIT_HPP
 #define FIT_HPP
 
+#include <optional>
 #include <any>
 #include <variant>
 #include <numeric>
@@ -28,19 +29,9 @@ struct FitCRTP {
 
 template <typename Derived>
 class FitBase : public FitCRTP<Derived> {
+    friend class FitCRTP<Derived>;
+
     public:
-        FitBase& fit (const Eigen::Ref<const DataMatrixD>& data) {
-            std::cout << "Algebraic fit() called" << std::endl;
-            this->derived().fit(data);
-            return *this;
-        }
-
-        FitBase& fit (const Eigen::Ref<const DataMatrixD>& data, Circle<double> guess) {
-            std::cout << "Geometric fit() called" << std::endl;
-            this->derived().fit(data, guess);
-            return *this;
-        }
-
         [[nodiscard]] inline Circle<double> getCircle() {
             std::cout << "CRTP getCircle() called" << std::endl;
             return this->derived().circle;
@@ -50,23 +41,41 @@ class FitBase : public FitCRTP<Derived> {
         Eigen::RowVector2<double> mean;
         Circle<double> circle;
 
+        // used with FitBase::compute(data)
         FitBase() {}
-        FitBase(const Eigen::Ref<const DataMatrixD>& data){
-            this->mean = data.colwise().mean();
 
-            fit(data);
+        explicit FitBase(const Eigen::Ref<const DataMatrixD>& data) {
+            this->derived().fit(data);
         }
-};
 
+        //TODO: Overload for in-place operation
+        explicit FitBase(Eigen::Ref<const DataMatrixD>& data) {
+            std::cout << "Calling non-const FitBase constructor" << std::endl;
+            this->derived().fit(data);
+        }
+
+        // used for GeometricFitWithGuess; initial guess is precomputed
+        explicit FitBase(const Eigen::Ref<const DataMatrixD>& data, Circle<double> initialGuess) {
+            this->derived().fit(data, initialGuess);
+        }
+
+};
 
 // TODO: Consider implementing generalized algebraic fits.
 template<typename Derived>
 class AlgebraicFit : public FitBase<Derived> {
+    friend class FitBase<Derived>;
+
+    public:
+        void fit(const Eigen::Ref<const DataMatrixD>& data) {
+            this->derived().compute(data);
+        }
     protected:
         AlgebraicFit() : FitBase<Derived>() {}
-        AlgebraicFit(const Eigen::Ref<const DataMatrixD>& data) : FitBase<Derived>(data) {}
+        AlgebraicFit(const Eigen::Ref<const DataMatrixD>& data) : FitBase<Derived>(data) {
+            std::cout << "calling parameterized algebraicfit constructor" << std::endl;
+        }
 
-    protected:
         void computeCircleParams(Eigen::Ref<const Eigen::MatrixXd> solution,
                 Eigen::Ref<const Eigen::RowVectorXd> mean) {
 
@@ -82,13 +91,48 @@ class AlgebraicFit : public FitBase<Derived> {
         }
 };
 
+// TODO: Implement functionality for geometric fits where the initial guess has been precomputed
+template <typename Derived>
+class GeometricFitWithGuess : public FitBase<Derived>{
+    friend class FitBase<Derived>;
+    typedef FitBase<Derived> Base;
+
+    public:
+        void fit(const Eigen::Ref<const DataMatrixD>& data, const Circle<double> initialGuess) {
+            this->derived().compute(data, initialGuess);
+        }
+    protected:
+        GeometricFitWithGuess() : Base() {}
+        GeometricFitWithGuess(const Eigen::Ref<const DataMatrixD>& data, const Circle<double> initialGuess) : Base(data, initialGuess) {}
+
+};
+
 template <typename Derived, class A,
          class = std::enable_if_t<std::is_base_of_v<AlgebraicFit<A>, A>>>
-class GeometricFit: public FitBase<GeometricFit<Derived, A>> {
+class GeometricFit: public FitBase<Derived> {
+
+    friend class FitBase<Derived>;
+    typedef FitBase<Derived> Base;
+
+    public:
+        void fit(const Eigen::Ref<const DataMatrixD>& data, const Circle<double> initialGuess) {
+            this->derived().compute(data, initialGuess);
+        }
+
+        void fit(const Eigen::Ref<const DataMatrixD>& data) {
+            Circle<double> initalGuess = A(data).getCircle();
+            fit(data, initalGuess);
+        }
+
     protected:
-        GeometricFit() {}
-        GeometricFit(const Eigen::Ref<const DataMatrixD>& data, std::any algMethod) {}
+        GeometricFit() : Base(){}
+        GeometricFit(const Eigen::Ref<const DataMatrixD>& data) : Base(data) {};
+
+        // used in cases where initial guess is precompute
+        GeometricFit(const Eigen::Ref<const DataMatrixD>& data, const Circle<double> initialguess) : Base(data, initialguess) {};
+
 };
+
 
 template<typename T,
 typename = std::enable_if_t<std::is_floating_point_v<T>>>
@@ -334,4 +378,5 @@ static void GanderGolubStrebel(const DataMatrix& data()){}
 };
 
 };
+
 #endif
