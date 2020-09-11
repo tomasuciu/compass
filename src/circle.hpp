@@ -36,8 +36,12 @@ public:
     }
 
     // Temporary getter functions
-    const Eigen::Vector3<T> getVector() {
+    const Eigen::Vector3<T> getVector() const {
         return Eigen::Vector3<T>(a, b, radius);
+    }
+
+    Eigen::RowVector2<T> getCenter() const {
+        return Eigen::RowVector2<T>{a, b};
     }
 
     // TODO implement

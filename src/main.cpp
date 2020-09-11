@@ -5,7 +5,7 @@
 #include "fit/Spath.hpp"
 #include "fit/Kasa.hpp"
 #include "fit/Taubin.hpp"
-#include "fit/LevenbergMarquardt.hpp"
+//#include "fit/LevenbergMarquardt.hpp"
 #include "fit/Pratt.hpp"
 #include "fit/Hyper.hpp"
 
@@ -35,10 +35,28 @@ int main() {
     benchmarkTransposed << benchmark.transpose();
 
 
+    //compass::Spath<compass::Kasa> S;
+    //S.fit(benchmarkTransposed);
+
+    compass::Algebraic<double>::PrattNewton(benchmark);
+
+    compass::PrattSVD P;
+    P.fit(benchmarkTransposed);
+
+    compass::PrattNewton PN;
+    PN.fit(benchmarkTransposed);
+
     //compass::HyperSimple h(benchmarkTransposed);
     //compass::HyperSVD H(benchmarkTransposed);
+    //std::cout << compass::Kasa().fit(benchmarkTransposed).getCircle() << std::endl;
+    //compass::Kasa k(benchmarkTransposed);
+    //std::cout << k.getCircle() << std::endl;
 
-    compass::Spath<compass::Kasa> s;
+    //Eigen::LDLT(benchmarkTransposed);
+
+    //std::cout << compass::Kasa k(benchmarkTransposed) << '\n';
+    //compass::Spath<compass::Kasa> s(benchmarkTransposed);
+    //compass::Spath<compass::Kasa>(benchmarkTransposed).fit();
     //compass::Spath<compass::LevenbergMarquardtFull> l;
 
 }

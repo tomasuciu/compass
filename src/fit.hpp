@@ -149,69 +149,6 @@ using DataMatrix3 = Eigen::Matrix<T, 3, Eigen::Dynamic>;
 
 static void KukushMarkovskyHuffel(const DataMatrix& data) {}
 
-static void PrattNewton(const Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>& data) {
-    auto mean = Eigen::Vector2<T>(data.row(0).mean(), data.row(1).mean());
-    auto colwiseData = data.colwise();
-
-    std::cout << mean << std::endl;
-    auto Mxx=0.0, Myy=0.0, Mxy=0.0, Mxz=0.0, Myz=0.0, Mzz=0.0;
-
-    std::for_each(colwiseData.begin(), colwiseData.end(), [&](const auto &column) {
-        auto Xi = column(0) - mean(0);
-        auto Yi = column(1) - mean(1);
-        auto Zi = std::pow(Xi, 2) + std::pow(Yi, 2);
-
-        Mxx += std::pow(Xi, 2);
-        Myy += std::pow(Yi, 2);
-        Mzz += std::pow(Zi, 2);
-        Mxy += Xi*Yi;
-        Mxz += Xi*Zi;
-        Myz += Yi*Zi;
-    });
-
-    int n = data.cols();
-
-    Mxx /= n;
-    Myy /= n;
-    Mxy /= n;
-    Mxz /= n;
-    Myz /= n;
-    Mzz /= n;
-
-    // computing coefficients of characteristic polynomial
-
-    double Mz = Mxx + Myy;
-    double Cov_xy = Mxx*Myy - Mxy*Mxy;
-    double Var_z = Mzz - Mz*Mz;
-
-    double A2 = 4.0*Cov_xy - 3.0*Mz*Mz - Mzz;
-    double A1 = Var_z*Mz + 4.0*Cov_xy*Mz - Mxz*Mxz - Myz*Myz;
-    double A0 = Mxz*(Mxz*Myy - Myz*Mxy) + Myz*(Myz*Mxx - Mxz*Mxy) - Var_z*Cov_xy;
-    double A22 = A2 + A2;
-
-    double x, y, Dy, xnew, ynew;
-    int iter, IterMAX=99;
-
-    // finds root using newton's method
-    for (x=0.,y=A0,iter=0; iter<IterMAX; iter++)
-        {
-            Dy = A1 + x*(A22 + 16.*x*x);
-            xnew = x - y/Dy;
-            if ((xnew == x)||(!std::isfinite(xnew))) break;
-            ynew = A0 + xnew*(A1 + xnew*(A2 + 4.0*xnew*xnew));
-            if (abs(ynew)>=abs(y))  break;
-            x = xnew;  y = ynew;
-        }
-
-    auto DET = x*x - x*Mz + Cov_xy;
-    auto Xcenter = (Mxz*(Myy - x) - Myz*Mxy)/DET/2.0;
-    auto Ycenter = (Myz*(Mxx - x) - Mxz*Mxy)/DET/2.0;
-
-    std::cout << "X: " << Xcenter + mean(0) << std::endl;
-    std::cout << "Y: " << Ycenter + mean(1) << std::endl;
-    std::cout << "Radius: " << sqrt(Xcenter*Xcenter + Ycenter*Ycenter + Mz + x + x) << std::endl;
-}
-
 static Circle<T> Nievergelt(const DataMatrix& data) {
     using GolubDataMatrix = Eigen::Matrix<T, 3, Eigen::Dynamic>;
     GolubDataMatrix designMat(3, data.cols());
