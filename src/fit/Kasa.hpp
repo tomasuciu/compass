@@ -16,12 +16,13 @@ class Kasa : public AlgebraicFit<Kasa> {
     protected:
         Kasa& compute (const Eigen::Ref<const DataMatrixD>& data) {
             Eigen::MatrixX<double> centered = data.rowwise() - mean;
+            const std::size_t N = centered.rows();
 
             Eigen::VectorX<double> Z = (centered.array().square()).rowwise().sum();
-            DesignMatrix mat = (DesignMatrix(centered.rows(), 3)
-                    << centered, Eigen::VectorXd::Ones(centered.rows())).finished();
+            DesignMatrix mat = (DesignMatrix(N, 3)
+                    << centered, Eigen::VectorXd::Ones(N)).finished();
 
-            Eigen::MatrixX<double> smean = (mat.transpose() * mat).array() / data.rows();
+            Eigen::MatrixX<double> smean = (mat.transpose() * mat).array() / N;
             clamp(smean);
 
             centered.conservativeResize(centered.rows(), centered.cols()+1);
@@ -38,11 +39,12 @@ class Kasa : public AlgebraicFit<Kasa> {
         }
 
     private:
+        //TODO: fix radius calculation for regular Kasa fit
         void computeCircleParams(Eigen::Ref<const Eigen::RowVectorXd> solVector,
                 Eigen::Ref<const Eigen::RowVectorXd> mean) {
             double B = -solVector(0) / 2.0;
             double C = -solVector(1) / 2.0;
-            double radius = std::sqrt(std::pow(B, 2) + std::pow(C, 2));
+            double radius = std::sqrt(solVector(0)*solVector(0) + solVector(1)* solVector(1))/4.0 +solVector(2);
             circle.setParameters(B + mean(0), C + mean(1), radius);
         }
 };
