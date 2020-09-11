@@ -7,11 +7,14 @@
 namespace compass {
 
 class PrattSVD : public AlgebraicFit<PrattSVD> {
+    friend class AlgebraicFit<PrattSVD>;
+
     public:
         PrattSVD() : AlgebraicFit<PrattSVD>() {}
         PrattSVD(const Eigen::Ref<const DataMatrixD>& data) : AlgebraicFit<PrattSVD>(data) {}
 
-        PrattSVD& fit(const Eigen::Ref<const DataMatrixD>& data) {
+    protected:
+        PrattSVD& compute(const Eigen::Ref<const DataMatrixD>& data) {
             Eigen::MatrixX<double> centered = data.rowwise() - mean;
 
             Eigen::VectorX<double> Z = (centered.array().square()).rowwise().sum();

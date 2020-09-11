@@ -38,11 +38,16 @@ class TaubinSVD : public AlgebraicFit<TaubinSVD> {
 };
 
 class TaubinNewton : public AlgebraicFit<TaubinNewton> {
+    friend class AlgebraicFit<TaubinNewton>;
+    typedef AlgebraicFit<TaubinNewton> Base;
+
     public:
-        using AlgebraicFit<TaubinNewton>::AlgebraicFit;
+        TaubinNewton() : Base() {}
+        TaubinNewton(const Eigen::Ref<const DataMatrixD>& data) : Base(data) {}
 
     protected:
         TaubinNewton& compute (const Eigen::Ref<const DataMatrixD>& data) {
+            //TODO: implement
             return *this;
         }
 };

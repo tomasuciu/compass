@@ -7,11 +7,14 @@
 namespace compass {
 
 class HyperSVD : public AlgebraicFit<HyperSVD> {
+    friend class AlgebraicFit<HyperSVD>;
+
     public:
         HyperSVD() : AlgebraicFit<HyperSVD>() {}
         HyperSVD(const Eigen::Ref<const DataMatrixD>& data) : AlgebraicFit<HyperSVD>(data) {}
 
-        HyperSVD& fit (const Eigen::Ref<const DataMatrixD>& data) {
+    protected:
+        HyperSVD& compute (const Eigen::Ref<const DataMatrixD>& data) {
             Eigen::MatrixX<double> centered = data.rowwise() - mean;
             Eigen::VectorX<double> Z = (centered.array().square()).rowwise().sum();
             ExtendedDesignMatrix mat = (ExtendedDesignMatrix(centered.rows(), 4)
@@ -54,11 +57,14 @@ class HyperSVD : public AlgebraicFit<HyperSVD> {
 };
 
 class HyperSimple : public AlgebraicFit<HyperSimple> {
+    friend class AlgebraicFit<HyperSimple>;
+
     public:
         HyperSimple() : AlgebraicFit<HyperSimple>() {}
         HyperSimple(const Eigen::Ref<const DataMatrixD>& data) : AlgebraicFit<HyperSimple>(data) {}
 
-        HyperSimple& fit (const Eigen::Ref<const DataMatrixD>& data) {
+    protected:
+        HyperSimple& compute (const Eigen::Ref<const DataMatrixD>& data) {
             Eigen::MatrixX<double> centered = data;
 
             Eigen::VectorX<double> Z = (centered.array().square()).rowwise().sum();
@@ -94,7 +100,6 @@ class HyperSimple : public AlgebraicFit<HyperSimple> {
             auto radius = std::sqrt(std::pow(AStar(1), 2) + std::pow(AStar(2), 2) -4*AStar(0)*AStar(3)) / std::abs(AStar(0))/2.0;
             std::cout << a << ", " << b << ", " << radius << std::endl;
             return *this;
-
         }
 };
 }

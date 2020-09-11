@@ -46,6 +46,14 @@ template <typename T>
     return mean;
 }
 
+// TODO: Test and possibly rewrite to be more resource-conscious
+template <typename T, int size>
+[[nodiscard]] static Eigen::RowVector<T, size> decenter(Eigen::Ref<Eigen::RowVector<T, size>> data, Eigen::Ref<Eigen::RowVector<T, size>> mean) {
+    return data + mean;
+}
+
+// TODO: Implement
+static void rescale() {}
 
 [[nodiscard]] static Eigen::Matrix<double, 4, 4> computeMatrixM(const DataMatrix& data){
     ExtendedDesignMatrix designMat = createExtendedDesignMatrix<double>(data);

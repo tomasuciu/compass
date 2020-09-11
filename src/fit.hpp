@@ -68,8 +68,10 @@ class AlgebraicFit : public FitBase<Derived> {
 
     public:
         void fit(const Eigen::Ref<const DataMatrixD>& data) {
+            this->mean = data.colwise().mean();
             this->derived().compute(data);
         }
+
     protected:
         AlgebraicFit() : FitBase<Derived>() {}
         AlgebraicFit(const Eigen::Ref<const DataMatrixD>& data) : FitBase<Derived>(data) {
@@ -99,6 +101,7 @@ class GeometricFitWithGuess : public FitBase<Derived>{
 
     public:
         void fit(const Eigen::Ref<const DataMatrixD>& data, const Circle<double> initialGuess) {
+            this->mean = data.colwise().mean();
             this->derived().compute(data, initialGuess);
         }
     protected:
@@ -116,6 +119,7 @@ class GeometricFit: public FitBase<Derived> {
 
     public:
         void fit(const Eigen::Ref<const DataMatrixD>& data, const Circle<double> initialGuess) {
+            this->mean = data.colwise().mean();
             this->derived().compute(data, initialGuess);
         }
 

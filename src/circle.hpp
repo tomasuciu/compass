@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <Eigen/Dense>
+#include "util.hpp"
 
 namespace compass {
 
@@ -15,6 +16,7 @@ class Circle {
 public:
     Circle() = default;
     Circle(T a, T b, T radius) : a(a), b(b), radius(radius) {}
+    Circle(const Eigen::Ref<const Eigen::RowVector3<T>>& parameters) : a(parameters(0)), b(parameters(1)), radius(parameters(2)) {}
 
     void setParameters(T a, T b, T radius) {
         this->a = a;
@@ -36,6 +38,11 @@ public:
     // Temporary getter functions
     const Eigen::Vector3<T> getVector() {
         return Eigen::Vector3<T>(a, b, radius);
+    }
+
+    // TODO implement
+    const static Circle<T> centerCircle (const Circle<T>& uncenterd, Eigen::Ref<const Eigen::RowVector2<T>> mean) {
+        return Circle<T>(0, 0, 0);
     }
 
     const inline T getA() const { return a; }
