@@ -149,33 +149,6 @@ using DataMatrix3 = Eigen::Matrix<T, 3, Eigen::Dynamic>;
 
 static void KukushMarkovskyHuffel(const DataMatrix& data) {}
 
-static Circle<T> Nievergelt(const DataMatrix& data) {
-    using GolubDataMatrix = Eigen::Matrix<T, 3, Eigen::Dynamic>;
-    GolubDataMatrix designMat(3, data.cols());
-
-    Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
-    auto centered = data.colwise() - mean;
-
-    auto centeredSquared = centered.cwiseProduct(centered);
-    auto Mzz = centeredSquared.colwise().sum();
-
-    auto Zmean = Mzz.mean();
-    auto Zcentered = Mzz.array() - Zmean;
-
-    designMat << Zcentered, centered;
-    Eigen::BDCSVD<Eigen::MatrixX<T>> svd(designMat.transpose(), Eigen::ComputeThinU | Eigen::ComputeThinV);
-
-    auto V = svd.matrixV();
-    auto A = V.col(2);
-    auto A_4 = -Zmean * A(0);
-
-    auto a = -A(1)/A(0)/2.0 + mean(0);
-    auto b = -A(2)/A(0)/2.0 + mean(1);
-    auto radius = std::sqrt(std::pow(A(1), 2) + std::pow(A(2), 2) - 4*A(0)*A_4)/std::abs(A(0))/2.0;
-
-    return Circle<T>(a, b, radius);
-}
-
 static void TaubinNewton(const DataMatrix& data) {
     Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
     /*auto centered = data.colwise() - mean;
