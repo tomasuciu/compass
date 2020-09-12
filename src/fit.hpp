@@ -1,6 +1,7 @@
 #ifndef FIT_HPP
 #define FIT_HPP
 
+#include <vector>
 #include <optional>
 #include <any>
 #include <variant>
@@ -136,11 +137,52 @@ class GeometricFit: public FitBase<Derived> {
 
     protected:
         GeometricFit() : Base(){}
-        GeometricFit(const Eigen::Ref<const DataMatrixD>& data) : Base(data) {};
+        GeometricFit(const Eigen::Ref<const DataMatrixD>& data) : Base(data) {}
 
         // used in cases where initial guess is precomputed
-        GeometricFit(const Eigen::Ref<const DataMatrixD>& data, const Circle<double> initialguess) : Base(data, initialguess) {};
+        GeometricFit(const Eigen::Ref<const DataMatrixD>& data, const Circle<double> initialguess) : Base(data, initialguess) {}
 
+};
+
+template <typename Derived>
+class SpecializedFit : public FitBase<Derived> {
+    friend class FitBase<Derived>;
+    typedef FitBase<Derived> Base;
+
+    public:
+        // for use by specialized derived classes that do not require pole parameter
+        void fit(const Eigen::Ref<const DataMatrixD>& data) {
+            this->mean = data.colwise().mean();
+            this->derived().compute(data);
+        }
+
+        // explicitly for classes that require a specified pole (Inversion, Karimaki, etc)
+        void fit(const Eigen::Ref<const DataMatrixD>& data, Eigen::Ref<const Eigen::Vector2d>& pole) {
+            this->mean = data.colwise().mean();
+            this->derived().compute(data, pole);
+        }
+    protected:
+        SpecializedFit() : Base() {}
+        SpecializedFit(const Eigen::Ref<const DataMatrixD>& data) : Base(data) {}
+        SpecializedFit(const Eigen::Ref<const DataMatrixD>& data, Eigen::Ref<const Eigen::Vector2d>& pole) : Base(data, pole) {}
+
+};
+
+template <typename Derived>
+class SpecializedFitWithPole : public FitBase<Derived> {
+    friend class FitBase<Derived>;
+    typedef FitBase<Derived> Base;
+
+    public:
+        void fit(const Eigen::Ref<const DataMatrixD>& data, Eigen::Ref<const Eigen::Vector2d>& pole) {
+        }
+
+        void fit(const Eigen::Ref<const DataMatrixD>& data, const std::vector<double>& pole) {
+            // Convert std::vector to Eigen::vector using map, then pass into overloaded fit
+        }
+    protected:
+        SpecializedFitWithPole() : Base() {}
+        SpecializedFitWithPole(const Eigen::Ref<const DataMatrixD>& data, Eigen::Ref<const Eigen::Vector2d>& pole) : Base(data, pole) {}
 };
 
 
@@ -150,10 +192,11 @@ struct Algebraic {
 
 using ExtendedDesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 4>; // N x 4
 using DesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 3>; // N x 3
+
+// TODO: phase out usage
 using DataMatrix = Eigen::Matrix<T, 2, Eigen::Dynamic, Eigen::RowMajor>; // 2 X N
 using DataMatrix3 = Eigen::Matrix<T, 3, Eigen::Dynamic>;
 
-static void KukushMarkovskyHuffel(const DataMatrix& data) {}
 
 static void TaubinNewton(const DataMatrix& data) {
     Eigen::Vector2<T> mean{data.row(0).mean(), data.row(1).mean()};
@@ -292,8 +335,6 @@ static void TaubinNystromSVD(const DataMatrix& data) {
     std::cout << K << std::endl;
 }
 
-
-static void GanderGolubStrebel(const DataMatrix& data()){}
 
 };
 

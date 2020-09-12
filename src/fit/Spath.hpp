@@ -17,7 +17,6 @@ class Spath : public GeometricFit<Spath<A>, A> {
     protected:
         // TODO: Evaluate spurious copies to optimize space complexity
         Spath& compute (const Eigen::Ref<const DataMatrixD>& data, const Circle<double> initialGuess) {
-            std::cout << initialGuess << std::endl;
             Eigen::MatrixXd centered = data.rowwise() - this->mean;
             Eigen::RowVector2<double> ParNew = initialGuess.getCenter() - this->mean;
 
@@ -28,7 +27,6 @@ class Spath : public GeometricFit<Spath<A>, A> {
                 ParOld = ParNew;
 
                 Eigen::MatrixXd Dxy = centered.rowwise() - ParOld;
-
                 Eigen::MatrixXd D = Dxy.cwiseProduct(Dxy);
                 Eigen::VectorXd DSum = (D.rowwise().sum()).cwiseSqrt();
 

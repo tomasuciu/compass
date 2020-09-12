@@ -114,15 +114,16 @@ class PrattNewton : public AlgebraicFit<PrattNewton> {
                     x = xnew;  y = ynew;
                 }
 
-            double DET = x*x - x*Mz + Cov_xy;
+                double DET = x*x - x*Mz + Cov_xy;
 
-            double Xcenter = (NormedSymmetricMatrix(1,0)*(Myy - x) - NormedSymmetricMatrix(2, 0)*NormedSymmetricMatrix(1, 2))/DET/2.0;
-            double Ycenter = (NormedSymmetricMatrix(2, 0)*(Mxx - x) - NormedSymmetricMatrix(1, 0)*NormedSymmetricMatrix(2, 1))/DET/2.0;
+                double Xcenter = (NormedSymmetricMatrix(1,0) * (Myy - x) - NormedSymmetricMatrix(2, 0) * NormedSymmetricMatrix(1, 2))/DET/2.0;
+                double Ycenter = (NormedSymmetricMatrix(2, 0) * (Mxx - x) - NormedSymmetricMatrix(1, 0) * NormedSymmetricMatrix(2, 1))/DET/2.0;
 
-            std::cout << "X: " << Xcenter + mean(0) << std::endl;
-            std::cout << "Y: " << Ycenter + mean(1) << std::endl;
-            std::cout << "Radius: " << sqrt(Xcenter*Xcenter + Ycenter*Ycenter + Mz + x + x) << std::endl;
+                std::cout << "X: " << Xcenter + mean(0) << std::endl;
+                std::cout << "Y: " << Ycenter + mean(1) << std::endl;
+                std::cout << "Radius: " << sqrt(Xcenter * Xcenter + Ycenter * Ycenter + Mz + x + x) << std::endl;
             }
+
             return *this;
         }
 };

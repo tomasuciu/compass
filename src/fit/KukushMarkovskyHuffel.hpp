@@ -40,6 +40,7 @@ class KukushMarkovskyHuffel : public AlgebraicFit<KukushMarkovskyHuffel> {
 
             Eigen::EigenSolver<Eigen::MatrixX<double>> solver;
             solver.compute(scatter, false);
+
             double Vmax = solver.eigenvalues().real().minCoeff();
             double Vmin = 0.0;
 

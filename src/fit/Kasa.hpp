@@ -94,8 +94,8 @@ class KasaConsistent : public AlgebraicFit<KasaConsistent> {
             while (Vmax - Vmin > epsilon) {
                 V = (Vmin + Vmax)/2.0;
                 Eigen::MatrixX<double> M = M0 - M1*V + V*V*M2;
-                auto eig = M.eigenvalues();
 
+                auto eig = M.eigenvalues();
                 if (eig.real().minCoeff() > 0) {
                     Vmin = V;
                 } else {
