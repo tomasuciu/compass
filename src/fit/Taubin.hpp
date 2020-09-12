@@ -32,6 +32,7 @@ class TaubinSVD : public AlgebraicFit<TaubinSVD> {
 
             auto radius = std::sqrt(std::pow(AR(1), 2) + std::pow(AR(2), 2) - 4*AR(0) * AR(3))/std::abs(AR(0))/2.0;
             std::cout << radius << std::endl;
+            circle.setParameters((-AR(1)/AR(0)/2) + mean(0), (-AR(2)/AR(0)/2) + mean(1), radius);
 
             return *this;
         }

@@ -44,7 +44,7 @@ class Kasa : public AlgebraicFit<Kasa> {
                 Eigen::Ref<const Eigen::RowVectorXd> mean) {
             double B = -solVector(0) / 2.0;
             double C = -solVector(1) / 2.0;
-            double radius = std::sqrt(solVector(0)*solVector(0) + solVector(1)* solVector(1))/4.0 +solVector(2);
+            double radius = std::sqrt(B*B + C*C + solVector(2));
             circle.setParameters(B + mean(0), C + mean(1), radius);
         }
 };
