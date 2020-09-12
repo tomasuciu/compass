@@ -53,7 +53,20 @@ class TaubinNewton : public AlgebraicFit<TaubinNewton> {
         }
 };
 
-class TaubinNystromSVD : public AlgebraicFit<TaubinNystromSVD> {};
+class TaubinNystromSVD : public AlgebraicFit<TaubinNystromSVD> {
+    friend class AlgebraicFit<TaubinNystromSVD>;
+    typedef AlgebraicFit<TaubinNystromSVD> Base;
+
+    public:
+        TaubinNystromSVD() : Base() {}
+        TaubinNystromSVD(const Eigen::Ref<const DataMatrixD>& data) : Base(data) {}
+
+    protected:
+        TaubinNystromSVD& compute (const Eigen::Ref<const DataMatrixD>& data) {
+            // TODO: implement
+            return *this;
+        }
+};
 
 }
 #endif /* TAUBIN_HPP */

@@ -110,6 +110,12 @@ class GeometricFitWithGuess : public FitBase<Derived>{
 
 };
 
+template <typename Derived>
+class GeometricFitGuessIndiscriminate : public FitBase<Derived> {
+    // specifically created for algorithms that are gauranteed to converge with any initial guess.
+    // Notably : Chernov-Lesort and Chernov-Houssam
+};
+
 template <typename Derived, class A,
          class = std::enable_if_t<std::is_base_of_v<AlgebraicFit<A>, A>>>
 class GeometricFit: public FitBase<Derived> {
@@ -132,7 +138,7 @@ class GeometricFit: public FitBase<Derived> {
         GeometricFit() : Base(){}
         GeometricFit(const Eigen::Ref<const DataMatrixD>& data) : Base(data) {};
 
-        // used in cases where initial guess is precompute
+        // used in cases where initial guess is precomputed
         GeometricFit(const Eigen::Ref<const DataMatrixD>& data, const Circle<double> initialguess) : Base(data, initialguess) {};
 
 };
