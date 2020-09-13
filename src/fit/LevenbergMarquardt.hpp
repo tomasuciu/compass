@@ -4,15 +4,34 @@
 #include "../fit.hpp"
 
 namespace compass {
+struct ObjectiveFunction {
+    // typedef crazy tuple to be returned
+    void computeIteration(double (*f)(Eigen::MatrixXd& data, const Circle<double>& current),
+            const Eigen::Ref<const DataMatrixD>& data, const Circle<double>& current) {
+
+        Eigen::MatrixXd rescaled = data.rowwise() - current.getCenter();
+
+        std::cout << f(rescaled, current) << std::endl;
+        // after shifted data matrix is returned, be sure to rescale by adding the mean colwise
+    }
+};
+
 
 template<class A>
 class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull<A>, A> {
+    friend class GeometricFit<LevenbergMarquardtFull<A>, A>;
+    typedef GeometricFit<LevenbergMarquardtFull<A>, A> Base;
+
     public:
         LevenbergMarquardtFull(double lambda=1.0) : GeometricFit<LevenbergMarquardtFull<A>, A>(), lambda(lambda) {}
         LevenbergMarquardtFull(Eigen::Ref<DataMatrixD> data, Circle<double> guess, double lambda=1.0)
             : GeometricFit<LevenbergMarquardtFull<A>, A>(data, guess), lambda(lambda) {}
 
-        LevenbergMarquardtFull& fit (Eigen::Ref<DataMatrixD> data, Circle<double> initGuess, double lambda=1.0) {
+    protected:
+
+        /*LevenbergMarquardtFull& compute(const Eigen::Ref<const DataMatrixD>& data, const Circle<double> initialGuess) {
+            const double LAMBDA = 1.0;
+
             Circle<double> guess = initGuess;
             // intial computation of objective function and derivatives
             auto [J, g, F] = computeIteration(data, guess);
@@ -40,7 +59,7 @@ class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull<A>, A>
             }
 
             return *this;
-        }
+        }*/
 
     private:
         double lambda;
@@ -64,7 +83,60 @@ class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull<A>, A>
 };
 
 template<class A>
-class LevenbergMarquardtReduced : public GeometricFit<LevenbergMarquardtReduced<A>, A> {};
+class LevenbergMarquardtReduced : public GeometricFit<LevenbergMarquardtReduced<A>, A>, private ObjectiveFunction {
+    friend class GeometricFit<LevenbergMarquardtReduced<A>, A>;
+    typedef GeometricFit<LevenbergMarquardtReduced<A>, A> Base;
+
+    public:
+        LevenbergMarquardtReduced<A>() : Base() {}
+        LevenbergMarquardtReduced<A>(const Eigen::Ref<const DataMatrixD>& data) {}
+
+    protected:
+
+        LevenbergMarquardtReduced<A>& compute(const Eigen::Ref<const DataMatrixD>& data, const Circle<double>& initialGuess) {
+            const double LAMBDA = 1.0;
+            const double epsilon=0.000001;
+            const int ITER_MAX = 50;
+
+            double lambda_srt = std::sqrt(LAMBDA);
+
+            computeIteration(&objective, data, initialGuess);
+
+            for (int i = 0; i < ITER_MAX; ++i) {
+                while (true) {
+
+                    break;
+                }
+
+            }
+
+            return *this;
+        }
+
+    private:
+
+        //typedef std::tuple<Eigen::MatrixX<double>, Eigen::VectorX<double>
+        // Note that the objective function modifies the data in place, reducing copies!
+        static double objective(Eigen::MatrixXd& data, const Circle<double>& current) {
+            //Eigen::MatrixXd centered = data.colwise() - current.getCenter();
+
+            Eigen::MatrixXd D = data.cwiseProduct(data);
+            Eigen::VectorXd DSum = (D.rowwise().sum()).cwiseSqrt();
+
+
+            data = data.array().colwise() / DSum.array();
+
+            double radius = DSum.mean();
+            Eigen::VectorXd g = DSum.array() - radius;
+            std::cout << radius << "\n\n\n";
+            std::cout << g << std::endl;
+            std::cout << "\n\n";
+            std::cout << g.norm() * g.norm() << std::endl;
+
+            return 0;
+        }
+
+};
 
 }
 
