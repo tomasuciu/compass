@@ -1,7 +1,7 @@
 #ifndef TAUBIN_HPP
 #define TAUBIN_HPP
 #include "../fit.hpp"
-#include <Eigen/SVD>
+//#include <Eigen/SVD>
 
 namespace compass {
 class TaubinSVD : public AlgebraicFit<TaubinSVD> {
@@ -110,6 +110,7 @@ class TaubinNewton : public AlgebraicFit<TaubinNewton> {
         }
 };
 
+// TODO: Debug implementation!
 class TaubinNystromSVD : public AlgebraicFit<TaubinNystromSVD> {
     friend class AlgebraicFit<TaubinNystromSVD>;
     typedef AlgebraicFit<TaubinNystromSVD> Base;
@@ -119,8 +120,61 @@ class TaubinNystromSVD : public AlgebraicFit<TaubinNystromSVD> {
         TaubinNystromSVD(const Eigen::Ref<const DataMatrixD>& data) : Base(data) {}
 
     protected:
+        // Note: This code is not configured to operate on Matrices of the DataMatrixD variety!
         TaubinNystromSVD& compute (const Eigen::Ref<const DataMatrixD>& data) {
-            // TODO: implement
+            DataMatrix3 C(3, data.cols());
+
+            auto centered = data.rowwise() - mean;
+            auto centeredSquared = centered.cwiseProduct(centered);
+            auto Mzz = centeredSquared.colwise().sum();
+            auto Zmean = Mzz.mean();
+            auto Zi = Mzz.array() - Zmean;
+            auto Zval = Zi/(2.0 * std::sqrt(Zmean));
+
+            C << Zval, centered;
+
+            // generates a random gaussian matrix; abstract away eventually
+            std::default_random_engine generator;
+            std::normal_distribution<double> normal{};
+            auto gaussian = [&] (double) {return normal(generator);};
+            int l = 10;
+            Eigen::MatrixXd omega = Eigen::MatrixXd::NullaryExpr(C.rows(), l, gaussian);
+
+            Eigen::MatrixXd CTC = C * C.transpose();
+            Eigen::MatrixXd X = CTC.colPivHouseholderQr().solve(omega);
+
+            Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr(X);
+            qr.compute(X);
+
+            Eigen::MatrixXd Q = qr.matrixQ();
+
+            Eigen::MatrixXd Y = CTC.colPivHouseholderQr().solve(Q);
+
+            Eigen::MatrixXd Z = Q.transpose() * Y;
+
+
+            Eigen::LLT<Eigen::MatrixXd> cholesky = Z.llt();
+            Eigen::MatrixXd G = cholesky.matrixL();
+            Eigen::MatrixXd K = Y * G.inverse();
+
+            Eigen::BDCSVD<Eigen::MatrixXd> svd(K, Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+            auto V = svd.matrixV();
+            std::cout << "Nystrom SVD: \n" << V << std::endl;
+            auto v = V.col(0);
+
+            exit(1);
+            auto A = V.col(2);
+
+            auto A0 = A(0)/(2.0*std::sqrt(Zmean));
+            auto A_4 = -Zmean*A0;
+
+            auto a = -A(1)/A0/2.0 + mean(0);
+            auto b = -A(2)/A0/2.0 + mean(1);
+            auto radius = std::sqrt(std::pow(A(1), 2) + std::pow(A(2), 2) - 4*A0 * A_4)/std::abs(A0)/2.0;
+
+            std::cout << a << ", " << b << " | radius : " << radius << std::endl;
+            exit(1);
             return *this;
         }
 };

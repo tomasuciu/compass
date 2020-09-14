@@ -2,9 +2,6 @@
 #define FIT_HPP
 
 #include <vector>
-#include <optional>
-#include <any>
-#include <variant>
 #include <numeric>
 #include <algorithm>
 #include <random>
@@ -21,6 +18,9 @@
 
 namespace compass {
 using DataMatrixD = Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor>;
+
+// TODO: phase out usage
+using DataMatrix = Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>; // 2 X N
 
 template <typename Derived>
 struct FitCRTP {
@@ -185,86 +185,6 @@ class SpecializedFitWithPole : public FitBase<Derived> {
 };
 
 
-template<typename T,
-typename = std::enable_if_t<std::is_floating_point_v<T>>>
-struct Algebraic {
-
-using ExtendedDesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 4>; // N x 4
-using DesignMatrix = Eigen::Matrix<T, Eigen::Dynamic, 3>; // N x 3
-
-// TODO: phase out usage
-using DataMatrix = Eigen::Matrix<T, 2, Eigen::Dynamic, Eigen::RowMajor>; // 2 X N
-using DataMatrix3 = Eigen::Matrix<T, 3, Eigen::Dynamic>;
-
-//TODO: Debug Nystrom functionality; not currently working
-static void TaubinNystromSVD(const DataMatrix& data) {
-    DataMatrix3 C(3, data.cols());
-    Eigen::Vector2<T> mean{ data.row(0).mean(), data.row(1).mean() };
-    auto centered = data.colwise() - mean;
-    auto centeredSquared = centered.cwiseProduct(centered);
-    auto Mzz = centeredSquared.colwise().sum();
-    auto Zmean = Mzz.mean();
-    auto Zi = Mzz.array() - Zmean;
-    auto Zval = Zi/(2.0 * std::sqrt(Zmean));
-
-    C << Zval, centered;
-
-    // generates a random gaussian matrix; abstract away eventually
-    std::default_random_engine generator;
-    std::normal_distribution<double> normal{};
-    auto gaussian = [&] (double) {return normal(generator);};
-    int l = 10;
-    Eigen::MatrixXd omega = Eigen::MatrixXd::NullaryExpr(C.rows(), l, gaussian);
-
-    Eigen::MatrixXd CTC = C * C.transpose();
-    Eigen::MatrixXd X = CTC.colPivHouseholderQr().solve(omega);
-
-    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr(X);
-    qr.compute(X);
-
-    Eigen::MatrixXd Q = qr.matrixQ();
-
-    Eigen::MatrixXd Y = CTC.colPivHouseholderQr().solve(Q);
-
-    Eigen::MatrixXd Z = Q.transpose() * Y;
-
-
-    Eigen::LLT<Eigen::MatrixXd> cholesky = Z.llt();
-    Eigen::MatrixXd G = cholesky.matrixL();
-    Eigen::MatrixXd K = Y * G.inverse();
-
-    Eigen::BDCSVD<Eigen::MatrixXd> svd(K, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
-    auto V = svd.matrixV();
-    std::cout << "Nystrom SVD: \n" << V << std::endl;
-    auto v = V.col(0);
-
-    exit(1);
-    auto A = V.col(2);
-
-    auto A0 = A(0)/(2.0*std::sqrt(Zmean));
-    auto A_4 = -Zmean*A0;
-
-    auto a = -A(1)/A0/2.0 + mean(0);
-    auto b = -A(2)/A0/2.0 + mean(1);
-    auto radius = std::sqrt(std::pow(A(1), 2) + std::pow(A(2), 2) - 4*A0 * A_4)/std::abs(A0)/2.0;
-
-    std::cout << a << ", " << b << " | radius : " << radius << std::endl;
-    exit(1);
-
-    std::cout << C.transpose() << std::endl;
-    std::cout << CTC << std::endl;
-    std::cout << omega << "\n\n";
-    std::cout << X << std::endl;
-    std::cout << Q << "\n\n" << std::endl;
-    std::cout << Y << "\n\n" << std::endl;
-    std::cout << Z << std::endl;
-    std::cout << K << std::endl;
-}
-
-
-};
-
-};
+} // end compass
 
 #endif
