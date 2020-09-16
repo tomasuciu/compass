@@ -3,20 +3,10 @@
 
 #include "Compass/src/Core/fit.hpp"
 
+#include <exception>
+#include <eigen-master/Eigen/QR>
+
 namespace compass {
-struct ObjectiveFunction {
-    // typedef crazy tuple to be returned
-    void computeIteration(double (*f)(Eigen::MatrixXd& data, const Circle<double>& current),
-            const Eigen::Ref<const DataMatrixD>& data, const Circle<double>& current) {
-
-        Eigen::MatrixXd rescaled = data.rowwise() - current.getCenter();
-        //auto [g, F, radius] = f(rescaled, current);
-
-        std::cout << f(rescaled, current) << std::endl;
-        // after shifted data matrix is returned, be sure to rescale by adding the mean colwise
-    }
-};
-
 
 template<class A>
 class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull<A>, A> {
@@ -24,117 +14,199 @@ class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull<A>, A>
     typedef GeometricFit<LevenbergMarquardtFull<A>, A> Base;
 
     public:
-        LevenbergMarquardtFull(double lambda=1.0) : GeometricFit<LevenbergMarquardtFull<A>, A>(), lambda(lambda) {}
-        LevenbergMarquardtFull(Eigen::Ref<DataMatrixD> data, Circle<double> guess, double lambda=1.0)
-            : GeometricFit<LevenbergMarquardtFull<A>, A>(data, guess), lambda(lambda) {}
+        LevenbergMarquardtFull() : Base() {}
+        LevenbergMarquardtFull(const Eigen::Ref<const DataMatrixD>& data) : Base(data) {}
 
     protected:
-
-        /*LevenbergMarquardtFull& compute(const Eigen::Ref<const DataMatrixD>& data, const Circle<double> initialGuess) {
+        LevenbergMarquardtFull<A>& compute(const Eigen::Ref<const DataMatrixD>& data, const Circle<double>& initialGuess) {
             const double LAMBDA = 1.0;
 
-            Circle<double> guess = initGuess;
-            // intial computation of objective function and derivatives
-            auto [J, g, F] = computeIteration(data, guess);
+            const double epsilon=0.000001;
+            const int ITER_MAX = 50;
+            const int rows = data.rows();
 
-            const int iterMax = 50;
-            const float epsilon = 0.000001;
-            // main loop, each run is one iteration
-            for (int i = 0; i < iterMax; ++i) {
-                // computation of lambda
+            double lambda_srt = std::sqrt(LAMBDA);
+            auto [J, g, F] = computeStep(data, initialGuess);
+            Eigen::RowVector3d par = initialGuess.getVector().transpose();
+
+            double progress;
+            Eigen::RowVector3d ParTemp;
+            Eigen::MatrixXd Jtemp;
+            Eigen::VectorXd gtemp;
+            double Ftemp;
+
+            for (int i = 0; i < ITER_MAX; ++i) {
+                double progress;
                 while (true) {
-                    Eigen::MatrixXd DelPar = (Eigen::MatrixXd(J.rows() + 3, J.cols())
-                            << J, std::sqrt(lambda) * Eigen::MatrixXd::Identity(3, 3)).finished();
+                    Eigen::MatrixXd Del = (Eigen::MatrixXd(rows + 3, data.cols() + 1)
+                            << J, Eigen::Matrix3d::Identity(3, 3).array() * lambda_srt).finished();
 
-                    Eigen::Vector<double, 9> rhs = (Eigen::Vector<double, 9>()
+                    Eigen::VectorXd rhs = (Eigen::VectorXd(rows + 3)
                             << g, Eigen::Vector3d::Zero(3)).finished();
 
-                    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> qr = DelPar.colPivHouseholderQr();
+                    Eigen::Vector3d DelPar = Del.householderQr().solve(rhs);
 
-                    auto solution = qr.solve(rhs);
-                    auto progress = computeNorm<double>(solution)/(computeNorm<double>(guess.getVector()) + epsilon);
-                    std::cout << progress << std::endl;
 
-                    exit(1);
+                    progress = DelPar.norm() / (par.norm() + epsilon);
+                    if (progress < epsilon) {
+                        goto STOP;
+                    }
+
+                    ParTemp = par - DelPar.transpose();
+
+                    std::tie(Jtemp, gtemp, Ftemp) = computeStep(data, ParTemp);
+
+                    if (Ftemp < F && ParTemp(2) > 0) {
+                        lambda_srt = lambda_srt / 2;
+                        break;
+                    } else {
+                        lambda_srt = lambda_srt * 2;
+                        continue;
+                    }
                 }
-            }
 
+                if (progress < epsilon) {
+                    break;
+                }
+                par = ParTemp;
+                J = Jtemp;
+                g = gtemp;
+                F = Ftemp;
+            }
+            STOP:
+
+            std::cout << par << std::endl;
             return *this;
-        }*/
+        }
 
     private:
-        double lambda;
+        //double lambda;
 
         std::tuple<Eigen::MatrixX<double>, Eigen::VectorX<double>, double>
-            computeIteration(Eigen::Ref<DataMatrixD> data, Circle<double> circle) {
+        computeStep(const Eigen::Ref<const DataMatrixD>& data, const Circle<double>& current) {
+            const size_t rows = data.rows();
 
-            const size_t n = data.rows();
-            Eigen::VectorX<double> Dx = data.col(0).array() - circle.getA();
-            Eigen::VectorX<double> Dy = data.col(1).array() - circle.getB();
+            Eigen::MatrixXd rescaled = data.rowwise() - current.getCenter();
 
-            Eigen::VectorX<double> D = (Dx.cwiseProduct(Dx) + Dy.cwiseProduct(Dy)).cwiseSqrt();
-            Eigen::MatrixX<double> J = (Eigen::MatrixX<double>(n, 3)
-                    << - Dx.cwiseQuotient(D), -Dy.cwiseQuotient(D), Eigen::VectorX<double>::Ones(n)).finished();
+            Eigen::MatrixXd D = rescaled.cwiseProduct(rescaled);
+            Eigen::VectorXd DSum = (D.rowwise().sum()).cwiseSqrt();
 
-            Eigen::VectorX<double> g = D.array() - circle.getRadius();
-            double F = std::pow(computeNorm<double>(g), 2);
+            Eigen::MatrixXd normalized = rescaled.array().colwise() / DSum.array();
+
+
+            Eigen::MatrixXd J = (Eigen::MatrixXd(rows, data.cols() + 1)
+                    << normalized.array(), Eigen::VectorXd::Ones(rows)).finished();
+            J = J.array() * -1;
+            //std::cout << J << std::endl;
+            Eigen::VectorXd g = DSum.array() - current.getRadius();
+            double F = g.norm() * g.norm();
 
             return std::make_tuple(J, g, F);
         }
+
+        std::tuple<Eigen::MatrixX<double>, Eigen::VectorX<double>, double>
+        computeStep(const Eigen::Ref<const DataMatrixD>& data, const Eigen::RowVector3d current) {
+            Circle<double> temp(current(0), current(1), current(2));
+            return computeStep(data, temp);
+        }
+
 };
 
 template<class A>
-class LevenbergMarquardtReduced : public GeometricFit<LevenbergMarquardtReduced<A>, A>, private ObjectiveFunction {
+class LevenbergMarquardtReduced : public GeometricFit<LevenbergMarquardtReduced<A>, A> {
     friend class GeometricFit<LevenbergMarquardtReduced<A>, A>;
     typedef GeometricFit<LevenbergMarquardtReduced<A>, A> Base;
 
     public:
         LevenbergMarquardtReduced<A>() : Base() {}
-        LevenbergMarquardtReduced<A>(const Eigen::Ref<const DataMatrixD>& data) {}
+        LevenbergMarquardtReduced<A>(const Eigen::Ref<const DataMatrixD>& data) : Base(data) {}
 
     protected:
-
         LevenbergMarquardtReduced<A>& compute(const Eigen::Ref<const DataMatrixD>& data, const Circle<double>& initialGuess) {
             const double LAMBDA = 1.0;
             const double epsilon=0.000001;
             const int ITER_MAX = 50;
 
+            const int rows = data.rows();
+
             double lambda_srt = std::sqrt(LAMBDA);
 
-            computeIteration(&objective, data, initialGuess);
+            Eigen::RowVector2d par = initialGuess.getCenter();
+            auto [J, g, F, radius] = computeStep(data, par);
 
             for (int i = 0; i < ITER_MAX; ++i) {
-                while (true) {
+                double progress;
+                Eigen::RowVector2d ParTemp;
+                Eigen::MatrixXd Jtemp;
+                Eigen::VectorXd gtemp;
+                double Ftemp, radiusTemp;
 
-                    break;
+                while (true) {
+                    Eigen::MatrixXd Del = (Eigen::MatrixXd(data.rows() + 2, data.cols())
+                           << J, Eigen::Matrix2d::Identity(2, 2).array() * lambda_srt).finished();
+
+                    Eigen::VectorXd rhs = (Eigen::VectorXd(data.rows() + 2)
+                            << g, Eigen::Vector2d::Zero(2)).finished();
+
+                    Eigen::VectorXd DelPar = Del.householderQr().solve(rhs);
+                    ParTemp = par - DelPar.transpose();
+                    progress = DelPar.norm() / (radius + par.norm() + epsilon);
+
+                    if (progress < epsilon) {
+                        goto STOP;
+                    }
+
+                    std::tie(Jtemp, gtemp, Ftemp, radiusTemp) = computeStep(data, ParTemp);
+
+                    if (Ftemp < F) {
+                        lambda_srt = lambda_srt / 2;
+                        break;
+                    } else {
+                        lambda_srt = lambda_srt * 2;
+                        continue;
+                    }
                 }
 
+                par = ParTemp;
+                J = Jtemp;
+                g = gtemp;
+                F = Ftemp;
+                radius = radiusTemp;
+
+                if (progress < epsilon)
+                    break;
             }
+
+            STOP:
+            std::cout << par << std::endl;
+            std::cout << radius << std::endl;
 
             return *this;
         }
 
     private:
+        std::tuple<Eigen::MatrixXd, Eigen::VectorXd, double, double>
+        computeStep(const Eigen::Ref<const DataMatrixD>& data, const Eigen::RowVector2d current) {
+            Eigen::MatrixXd rescaled = data.rowwise() - current;
 
-        //typedef std::tuple<Eigen::MatrixX<double>, Eigen::VectorX<double>
-        // Note that the objective function modifies the data in place, reducing copies!
-        static std::tuple<Eigen::VectorX<double>, double, double>
-        objective(Eigen::MatrixXd& data, const Circle<double>& current) {
-
-            Eigen::MatrixXd D = data.cwiseProduct(data);
+            Eigen::MatrixXd D = rescaled.cwiseProduct(rescaled);
             Eigen::VectorXd DSum = (D.rowwise().sum()).cwiseSqrt();
 
-            data = data.array().colwise() / DSum.array();
+            Eigen::MatrixXd normalized = rescaled.array().colwise() / DSum.array();
+
+            Eigen::RowVector2d normalizedMean = normalized.colwise().mean();
 
             double radius = DSum.mean();
+
+            Eigen::MatrixXd J = -1 * normalized.array();
+            J.noalias() = J.rowwise() + normalizedMean;
+
             Eigen::VectorXd g = DSum.array() - radius;
             double F = g.norm() * g.norm();
-
-            return std::make_tuple(g, F, radius);
+            return std::make_tuple(J, g, F, radius);
         }
-
 };
 
-}
+} /* end compass */
 
 #endif

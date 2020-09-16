@@ -163,7 +163,6 @@ class SpecializedFitWithPole : public FitBase<Derived> {
             this->derived().compute(data, pole);
         }
 
-
         void fit(const Eigen::Ref<const DataMatrixD>& data, const std::vector<double>& pole) {}
 
     protected:
