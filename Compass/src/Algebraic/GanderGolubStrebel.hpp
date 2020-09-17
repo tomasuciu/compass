@@ -2,6 +2,7 @@
 #define GANDER_GOLUB_STREBEL_HPP
 
 #include "Compass/src/Core/fit.hpp"
+#include <eigen-master/Eigen/SVD>
 
 namespace compass {
 class GanderGolubStrebel : public AlgebraicFit<GanderGolubStrebel> {
@@ -14,8 +15,19 @@ class GanderGolubStrebel : public AlgebraicFit<GanderGolubStrebel> {
 
     protected:
         GanderGolubStrebel& compute (const Eigen::Ref<const DataMatrixD>& data) {
-            // TODO implement!
+            Eigen::VectorX<double> Z = (Eigen::VectorX<double>(data.rows())
+                    << (data.array().square()).rowwise().sum()).finished();
+
+            ExtendedDesignMatrix mat = (ExtendedDesignMatrix(data.rows(), 4)
+                    << Z, data, Eigen::VectorXd::Ones(data.rows())).finished();
+
+            Eigen::BDCSVD<Eigen::MatrixXd> SVD{mat, Eigen::ComputeThinV};
+            Eigen::MatrixX<double> V = SVD.matrixV();
+
+            AlgebraicFit::computeCircleParameters(SVD.matrixV().col(3));
+
             return *this;
+
         }
 };
 }
