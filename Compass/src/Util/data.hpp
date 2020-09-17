@@ -7,12 +7,12 @@
 #include <cmath>
 #include <vector>
 
-#include <Eigen/Dense>
+#include <eigen-master/Eigen/Dense>
 
 namespace compass {
 
 template<typename T,
-typename = std::enable_if_t<std::is_floating_point_v<T>>>
+typename = std::enable_if_t<std::is_floating_point<T>::value>>
 
 struct Generate {
 

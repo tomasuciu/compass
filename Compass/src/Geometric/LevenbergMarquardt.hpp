@@ -46,7 +46,6 @@ class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull<A>, A>
 
                     Eigen::Vector3d DelPar = Del.householderQr().solve(rhs);
 
-
                     progress = DelPar.norm() / (par.norm() + epsilon);
                     if (progress < epsilon) {
                         goto STOP;

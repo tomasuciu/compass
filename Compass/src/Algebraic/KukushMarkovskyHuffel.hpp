@@ -66,10 +66,7 @@ class KukushMarkovskyHuffel : public AlgebraicFit<KukushMarkovskyHuffel> {
             double minEigenVal = solver.eigenvalues().real().minCoeff(&minIndex);
             Eigen::VectorXd minEigenVec = solver.eigenvectors().real().col(minIndex);
 
-            auto a = -minEigenVec(1)/minEigenVec(0)/2.0;
-            auto b = -minEigenVec(2)/minEigenVec(0)/2.0;
-            auto rad = std::sqrt(a*a + b*b - minEigenVec(3)/minEigenVec(0));
-            std::cout << Circle<double>(a, b, rad) << std::endl;
+            AlgebraicFit::computeCircleParameters(minEigenVec, false);
             return *this;
         }
 };

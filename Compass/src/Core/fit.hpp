@@ -71,21 +71,18 @@ class AlgebraicFit : public FitBase<Derived> {
 
     protected:
         AlgebraicFit() : FitBase<Derived>() {}
-        AlgebraicFit(const Eigen::Ref<const DataMatrixD>& data) : FitBase<Derived>(data) {
-        }
+        AlgebraicFit(const Eigen::Ref<const DataMatrixD>& data) : FitBase<Derived>(data) {}
 
-        void computeCircleParams(Eigen::Ref<const Eigen::MatrixXd> solution,
-                Eigen::Ref<const Eigen::RowVectorXd> mean) {
+        void computeCircleParameters(Eigen::Ref<const Eigen::VectorXd> v, bool recenter=true) {
+            auto a = -v(1) / v(0) / 2.0;
+            auto b = -v(2) / v(0) / 2.0;
+            auto radius = std::sqrt(v(1) * v(1) + v(2) * v(2) - 4*v(0) * v(3)) / std::abs(v(0)) / 2.0;
 
-            auto a = -solution(0) / 2.0 + mean(0);
-            auto b = -solution(1) / 2.0 + mean(1);
-            auto r = std::sqrt(std::pow(solution(0), 2) + std::pow(solution(1), 2));
-
-            this->derived().circle.setParameters(a, b, r);
-        }
-
-        void computeCircleParams(Eigen::Ref<const Eigen::MatrixXd> solution) {
-            computeCircleParams(solution, Eigen::RowVector2d::Zero());
+            if (recenter) {
+                this->derived().circle.setParameters(a + this->mean(0), b + this->mean(1), radius);
+            } else {
+                this->derived().circle.setParameters(a, b, radius);
+            }
         }
 };
 

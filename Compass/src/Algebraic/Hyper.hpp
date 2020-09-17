@@ -17,7 +17,9 @@ class HyperSVD : public AlgebraicFit<HyperSVD> {
 
     protected:
         HyperSVD& compute (const Eigen::Ref<const DataMatrixD>& data) {
-            Eigen::MatrixX<double> centered = data.rowwise() - mean;
+            Eigen::MatrixX<double> centered = (Eigen::MatrixX<double>(data.rows(), data.cols())
+                    << data.rowwise() - mean).finished();
+
             Eigen::VectorX<double> Z = (centered.array().square()).rowwise().sum();
             ExtendedDesignMatrix mat = (ExtendedDesignMatrix(centered.rows(), 4)
                     << Z, centered, Eigen::VectorXd::Ones(centered.rows())).finished();
@@ -30,11 +32,10 @@ class HyperSVD : public AlgebraicFit<HyperSVD> {
             if (S.minCoeff() < 1e-12) {
                 solution = V.col(3);
             } else {
-                Eigen::RowVectorX<double> R = mat.colwise().mean();
+                Eigen::RowVector4<double> R = mat.colwise().mean();
                 clamp(R);
 
                 Eigen::MatrixX<double> W = V * S.asDiagonal() * V.transpose();
-
                 Eigen::MatrixX<double> N = (Eigen::Matrix4<double>(4, 4)
                         << 8*R(0), 4*R(1), 4*R(2), 2, 4*R(1), 1, 0, 0, 4*R(2), 0, 1, 0, 2, 0, 0, 0).finished();
 
@@ -48,11 +49,7 @@ class HyperSVD : public AlgebraicFit<HyperSVD> {
                 solution = cholesky.solve(AStar);
             }
 
-            auto a = -solution(1)/solution(0)/2.0 + mean(0);
-            auto b = -solution(2)/solution(0)/2.0 + mean(1);
-
-            auto radius = std::sqrt(std::pow(solution(1), 2) + std::pow(solution(2), 2) -4*solution(0)*solution(3)) / std::abs(solution(0))/2.0;
-            std::cout << a << ", " << b << ", " << radius << std::endl;
+            AlgebraicFit::computeCircleParameters(solution);
             return *this;
         }
 
@@ -96,11 +93,7 @@ class HyperSimple : public AlgebraicFit<HyperSimple> {
 
             Eigen::Vector4d AStar = eigenvectors.col(eigenvectors.cols() - 1);
 
-            auto a = -AStar(1)/AStar(0)/2.0;
-            auto b = -AStar(2)/AStar(0)/2.0;
-
-            auto radius = std::sqrt(std::pow(AStar(1), 2) + std::pow(AStar(2), 2) -4*AStar(0)*AStar(3)) / std::abs(AStar(0))/2.0;
-            std::cout << a << ", " << b << ", " << radius << std::endl;
+            AlgebraicFit::computeCircleParameters(AStar, false);
             return *this;
         }
 };
