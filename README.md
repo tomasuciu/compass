@@ -30,7 +30,7 @@ The taxonomy of **compass** comprises three broad categories of algorithms &mdas
 - Specialized algorithms are a group of sophisticated mathematical routines that bear little similarity with their geometric and algebraic counterparts as well as with one another. They employ 
 
 ## Features
-**compass** implements a module-centric organizational structure to reduce the amount of #include directives needed to write a minimally functional program. To avoid compilation overhead, files can be included individually.
+**compass** implements a module-centric organizational structure to reduce the amount of ``#include`` directives needed to write a minimally functional program. To avoid compilation overhead, files can be included individually.
 
 <table>
   <tr>
@@ -196,9 +196,21 @@ The taxonomy of **compass** comprises three broad categories of algorithms &mdas
     <td align="center">:heavy_check_mark:</td>
     <td align="center">:heavy_check_mark:</td>
   </tr>
-
 </table>
 
 ## Installation
 
 ## Documentation
+
+### Future Directions (in progress)
+- Python bindings
+- Matrix preallocation functionality
+- CUDA++ parallelization (if supported)
+- Rework CMake build system to support more platforms
+- Interface for algorithm comparison
+- Improved genericity re: data types and matrix algebra libraries
+- Implement ChernovLesort
+- Implement ChernovHoussam
+
+## References
+
