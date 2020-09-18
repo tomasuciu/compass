@@ -18,28 +18,27 @@ class KukushMarkovskyHuffel : public AlgebraicFit<KukushMarkovskyHuffel> {
 
     protected:
         KukushMarkovskyHuffel& compute(const Eigen::Ref<const DataMatrixD>& data) {
+            size_t rows = data.rows();
 
-        size_t rows = data.rows();
+            // uncentered matrices
+            Eigen::VectorX<double> Z = (data.array().square()).rowwise().sum();
+            ExtendedDesignMatrix mat = (ExtendedDesignMatrix(rows, 4)
+                    << Z, data, Eigen::VectorXd::Ones(rows)).finished();
 
-        // uncentered matrices
-        Eigen::VectorX<double> Z = (data.array().square()).rowwise().sum();
-        ExtendedDesignMatrix mat = (ExtendedDesignMatrix(rows, 4)
-                << Z, data, Eigen::VectorXd::Ones(rows)).finished();
+            DesignMatrix uncentered = (DesignMatrix(rows, 3)
+                    << data, Eigen::VectorXd::Ones(rows)).finished();
 
-        DesignMatrix uncentered = (DesignMatrix(rows, 3)
-                << data, Eigen::VectorXd::Ones(rows)).finished();
+            Eigen::MatrixX<double> M0 = mat.transpose() * mat;
 
-        Eigen::MatrixX<double> M0 = mat.transpose() * mat;
+            Eigen::Matrix4<double> M1 = (Eigen::Matrix4<double>() <<
+                    8 * M0(0, 3), 4 * M0(1, 3), 4* M0(2, 3), 2 * rows, 4 * M0(1, 3), rows, 0, 0,
+                    4 * M0(2, 3), 0, rows, 0, 2 * rows, 0, 0, 0).finished();
 
-        Eigen::Matrix4<double> M1 = (Eigen::Matrix4<double>() <<
-                8 * M0(0, 3), 4 * M0(1, 3), 4* M0(2, 3), 2 * rows, 4 * M0(1, 3), rows, 0, 0,
-                4 * M0(2, 3), 0, rows, 0, 2 * rows, 0, 0, 0).finished();
+            Eigen::Matrix4<double> M2 = (Eigen::Matrix4<double>() <<
+                    8 * rows, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).finished();
 
-        Eigen::Matrix4<double> M2 = (Eigen::Matrix4<double>() <<
-                8 * rows, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).finished();
-
-        Eigen::MatrixX<double> centered = data.rowwise() - mean;
-        Eigen::MatrixX<double> scatter = centered.transpose() * centered;
+            Eigen::MatrixX<double> centered = data.rowwise() - mean;
+            Eigen::MatrixX<double> scatter = centered.transpose() * centered;
 
             Eigen::EigenSolver<Eigen::MatrixX<double>> solver;
             solver.compute(scatter, false);
@@ -53,15 +52,15 @@ class KukushMarkovskyHuffel : public AlgebraicFit<KukushMarkovskyHuffel> {
                 double V = (Vmin + Vmax)/2;
                 M.noalias() = M0 - M1*V + V*V*M2;
 
-                auto eig = M.eigenvalues();
-                if (eig.real().minCoeff() > 0) {
+                Eigen::VectorXd eig = M.eigenvalues().real();
+                if (eig.minCoeff() > 0) {
                     Vmin = V;
                 } else {
                     Vmax = V;
                 }
             }
-
             solver.compute(M, true);
+
             Eigen::Index minIndex;
             double minEigenVal = solver.eigenvalues().real().minCoeff(&minIndex);
             Eigen::VectorXd minEigenVec = solver.eigenvectors().real().col(minIndex);

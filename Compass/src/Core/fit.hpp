@@ -60,7 +60,7 @@ class FitBase : public FitCRTP<Derived> {
         }
 };
 
-// TODO: Consider implementing generalized algebraic fits.
+
 template<typename Derived>
 class AlgebraicFit : public FitBase<Derived> {
     public:

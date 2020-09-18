@@ -32,14 +32,7 @@ class TaubinSVD : public AlgebraicFit<TaubinSVD> {
 
             Eigen::VectorX<double> AR = (Eigen::VectorX<double>(4) << A, -Z.mean() * A(0)).finished();
 
-            // TODO: abstract away circle paramater calculation
-            std::cout << (-AR(1)/AR(0)/2) + mean(0) << std::endl;
-            std::cout << (-AR(2)/AR(0)/2) + mean(1) << std::endl;
-
-            auto radius = std::sqrt(std::pow(AR(1), 2) + std::pow(AR(2), 2) - 4*AR(0) * AR(3))/std::abs(AR(0))/2.0;
-            std::cout << radius << std::endl;
-            circle.setParameters((-AR(1)/AR(0)/2) + mean(0), (-AR(2)/AR(0)/2) + mean(1), radius);
-
+            AlgebraicFit::computeCircleParameters(AR);
             return *this;
         }
 };
@@ -114,6 +107,7 @@ class TaubinNewton : public AlgebraicFit<TaubinNewton> {
             }
             return *this;
         }
+
 };
 
 // TODO: Debug implementation!
