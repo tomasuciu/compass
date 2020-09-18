@@ -3,7 +3,7 @@
 <p align="center">
   <a href="#summary">Summary</a> •
   <a href="#installation">Installation</a> •
-  <a href="#features">Features</a> •
+  <a href="#usage">Usage</a> •
   <a href="#documentation">Documentation</a> •
   <a href="#references">References</a> •
 </p>
@@ -17,9 +17,9 @@ Using an easily extensible interface based on the [curiously recurring template 
 
 **compass** is designed to be easily integrated into larger projects. To that end, its only dependecy is [Eigen 3.3](http://eigen.tuxfamily.org). Further, **compass** can be collapsed into a singular header file using the included Python script, though, admittedly, the benefits of this are minimal considering the small scale and incomplexity of the codebase.
 
-**compass** is in the early stages of its development and has not been exhaustively tested and optimized. As of the current release, it is not recommended for use in production.
+**compass** is in the early stages of its development and has not been exhaustively tested and optimized. As such, it is not recommended for use in production.
 
-The taxonomy of **compass** comprises three broad categories of algorithms &mdash; algebraic, geometric, and specialized &mdash; as well as several subcatagories which are further discussed in the [features](#features) section.
+The taxonomy of **compass** comprises three broad categories of algorithms &mdash; algebraic, geometric, and specialized &mdash; as well as several subcatagories which are further discussed in the [features](#features) section. An algorithm's classification is given in its relation to the following function.
 
 <p align="center">
 <a href="https://www.codecogs.com/eqnedit.php?latex=\large&space;F\left&space;(&space;a,&space;b,&space;R&space;\right&space;)&space;=&space;\sum_{i=1}^{n}\left&space;|&space;\sqrt{(x_{i}&space;-&space;a)^{2}&space;&plus;&space;(y_{i}&space;-&space;b)^{2}}&space;-&space;R&space;\right&space;|" target="_blank"><img src="https://latex.codecogs.com/svg.latex?\large&space;F\left&space;(&space;a,&space;b,&space;R&space;\right&space;)&space;=&space;\sum_{i=1}^{n}\left&space;|&space;\sqrt{(x_{i}&space;-&space;a)^{2}&space;&plus;&space;(y_{i}&space;-&space;b)^{2}}&space;-&space;R&space;\right&space;|" title="\large F\left ( a, b, R \right ) = \sum_{i=1}^{n}\left | \sqrt{(x_{i} - a)^{2} + (y_{i} - b)^{2}} - R \right|" /></a>
@@ -27,9 +27,9 @@ The taxonomy of **compass** comprises three broad categories of algorithms &mdas
 
 - Algebraic algorithms are non-iterative procedures that reparameterize <a href="https://www.codecogs.com/eqnedit.php?latex=F" target="_blank"><img src="https://latex.codecogs.com/svg.latex?F" title="F" /></a> and minimize the corresponding objective function by way of orthogonal least squares.
 - Geometric algorithms, supplied with an initial guess (usually produced by an algorithm of the Algebraic variety), iteratively converge to a minimum of <a href="https://www.codecogs.com/eqnedit.php?latex=F" target="_blank"><img src="https://latex.codecogs.com/svg.latex?F" title="F" /></a>.
-- Specialized algorithms are a group of sophisticated mathematical routines that bear little similarity with their geometric and algebraic counterparts as well as with one another. They employ 
+- Specialized algorithms are a group of sophisticated routines that bear little similarity with their geometric and algebraic counterparts as well as with one another. They employ nonstandard techniques ranging from stereographic projections of the Riemann sphere to trigonometric transformations of <a href="https://www.codecogs.com/eqnedit.php?latex=F" target="_blank"><img src="https://latex.codecogs.com/svg.latex?F" title="F" /></a> (Karimaki).
 
-## Features
+## Usage
 **compass** implements a module-centric organizational structure to reduce the amount of ``#include`` directives needed to write a minimally functional program. To avoid compilation overhead, files can be included individually.
 
 <table>
@@ -197,6 +197,30 @@ The taxonomy of **compass** comprises three broad categories of algorithms &mdas
     <td align="center">:heavy_check_mark:</td>
   </tr>
 </table>
+
+### Example
+```cpp
+#include "Compass/Geometric.hpp"
+#include "Compass/Specialized n.hpp"
+using namespace compass;
+
+Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor> data(6, 2);
+data << 1.0, 7.0, 2.0, 6.0, 5.0, 8.0, 7.0, 7.0, 9.0, 5.0, 3.0, 7.0;
+
+PrattNewton PN;
+PN.fit(data);
+std::cout << PN.getCircle() << "\n";
+
+LevenbergMarquardtFull<TaubinSVD> LMF(data);
+std::cout << LMF.getCircle() << "\n";
+
+```
+The above code illustrates the two primary methods by which an algorithm can be fit to a given data matrix, <a href="https://www.codecogs.com/eqnedit.php?latex=\inline&space;A&space;\in&space;\mathbb{R}^{n\times&space;2}" target="_blank"><img src="https://latex.codecogs.com/svg.latex?\inline&space;A&space;\in&space;\mathbb{R}^{n\times&space;2}" title="A \in \mathbb{R}^{n\times 2}" /></a>, where the columns represent <a href="https://www.codecogs.com/eqnedit.php?latex=\inline&space;x" target="_blank"><img src="https://latex.codecogs.com/svg.latex?\inline&space;x" title="x" /></a> and <a href="https://www.codecogs.com/eqnedit.php?latex=\inline&space;y" target="_blank"><img src="https://latex.codecogs.com/svg.latex?\inline&space;y" title="y" /></a>, respectively.
+
+The first example utilizes the default constructor and passes the matrix by means of `fit`, which dispatches to a local implementation of the algorithm. Fit overwrites any exisiting parameters associated with a given instance, however, in this case they are being initialized for the first time.
+
+On the other hand, the second example makes use of the overloaded constructor in the `GeometricFit` interface from which `LevenbergMarquardtFull` derives. Note that since `LevenbergMarquardtFull` is of class `GeometricFit`, it requires an initial guess produced by an algebraic algorithm, in this case, `TaubinSVD`.
+  
 
 ## Installation
 
