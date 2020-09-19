@@ -129,7 +129,7 @@ class Trust : public GeometricFit<Trust<A>, A> {
                 g0 = (Eigen::VectorXd(g.rows() + nPar) << g, Eigen::VectorXd::Zero(nPar)).finished();
             }
 
-            std::cout << par << std::endl;
+            this->circle.setParameters(par);
             return *this;
         }
 

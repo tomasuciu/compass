@@ -82,9 +82,8 @@ class TaubinNewton : public AlgebraicFit<TaubinNewton> {
                 double x , y;
                 for (x = 0, y = 1e20, iter = 0; iter < IterMax; ++iter) {
                     double yold = y;
-                    y = A0 + x*(A1 + x * (A2 + x*A3));
+                    y = A0 + x * (A1 + x * (A2 + x * A3));
                     if (std::abs(y) > std::abs(yold)) {
-                        // Newton - Taubin goes in the wrong direction!
                         x = 0;
                         break;
                     }
@@ -100,12 +99,20 @@ class TaubinNewton : public AlgebraicFit<TaubinNewton> {
                     }
                 }
                 double DET = x*x - x*Mz + Cov_xy;
-                double a = (NormedSymmetricMatrix(0, 1) * (Myy - x) - NormedSymmetricMatrix(0, 2) * NormedSymmetricMatrix(1, 2))/DET/2.0;
-                double b = (NormedSymmetricMatrix(0, 2) * (Mxx - x) - NormedSymmetricMatrix(1, 0) * NormedSymmetricMatrix(1, 2))/DET/2.0;
-                double rad = std::sqrt(a*a + b*b + Mz);
-                std::cout << '(' << a + mean(0) << ", " << b + mean(1) << "), radius: " << rad << std::endl;
+                computeCircleParameters(NormedSymmetricMatrix, x, y, Mxx, Myy, Mz, DET);
             }
+
             return *this;
+        }
+
+    private:
+        void computeCircleParameters(const Eigen::Ref<const Eigen::MatrixXd>& NormedSymmetricMatrix,
+                double x, double y, double Mxx, double Myy, double Mz, double DET) {
+
+            double a = (NormedSymmetricMatrix(0, 1) * (Myy - x) - NormedSymmetricMatrix(0, 2) * NormedSymmetricMatrix(1, 2))/DET/2.0;
+            double b = (NormedSymmetricMatrix(0, 2) * (Mxx - x) - NormedSymmetricMatrix(1, 0) * NormedSymmetricMatrix(1, 2))/DET/2.0;
+            double rad = std::sqrt(a*a + b*b + Mz);
+            circle.setParameters(a + mean(0), b + mean(1), rad);
         }
 
 };

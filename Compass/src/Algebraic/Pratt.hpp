@@ -26,43 +26,31 @@ class PrattSVD : public AlgebraicFit<PrattSVD> {
             Eigen::BDCSVD<Eigen::MatrixX<double>> svd{mat, Eigen::ComputeThinV};
             Eigen::MatrixX<double> V = svd.matrixV();
             Eigen::VectorX<double> S = svd.singularValues();
+            Eigen::Vector4d sol;
 
             if (S.minCoeff() < 1e-12) {
-                // Solve idealized case here, TODO!
+                sol = V.col(3);
             } else {
                 Eigen::MatrixX<double> W = V * S.asDiagonal();
 
-                //std::cout << W << std::endl;
-                Eigen::MatrixX<double> Binv = (Eigen::Matrix4<double>(4, 4)
+                Eigen::Matrix4<double> Binv = (Eigen::Matrix4<double>(4, 4)
                         << 0, 0, 0, -0.5, 0, 1, 0, 0, 0, 0, 1, 0, -0.5, 0, 0, 0).finished();
 
                 Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver;
 
                 solver.compute(W.transpose() * Binv * W);
                 Eigen::MatrixXd eigenvectors = solver.eigenvectors();
-
                 Eigen::Vector4d smallestPositiveEigenvector = eigenvectors.col(1);
-                //std::cout << "\n\n" << smallestPositiveEigenvector << std::endl;
-
                 Eigen::MatrixXd scaled = Eigen::Vector4d::Ones().cwiseQuotient(S).asDiagonal();
 
-                Eigen::MatrixXd sol = V * scaled * smallestPositiveEigenvector;
-
-                auto a = -sol(1)/sol(0)/2.0 + mean(0);
-                auto b = -sol(2)/sol(0)/2.0 + mean(1);
-
-                auto radius = std::sqrt(std::pow(sol(1), 2) + std::pow(sol(2), 2) -4*sol(0)*sol(3)) / std::abs(sol(0))/2.0;
-                std::cout << a << ", " << b << ", " << radius << std::endl;
+                sol = V * scaled * smallestPositiveEigenvector;
             }
+
+            AlgebraicFit::computeCircleParameters(sol);
             return *this;
         }
 };
 
-// TODO:
-// 1 - Replace dynamic matrices with constant-size matrices for improved performance
-// 2 - Replace instances of std::pow(X, 2) with X * X
-// 3 - Write method to compute circle parameters, linking with .getCircle()
-// 4 - Design and implement PrattBase mixin for creating design matrices
 class PrattNewton : public AlgebraicFit<PrattNewton> {
     friend class AlgebraicFit<PrattNewton>;
     typedef AlgebraicFit<PrattNewton> Base;
@@ -87,11 +75,11 @@ class PrattNewton : public AlgebraicFit<PrattNewton> {
 
             double Mzz = NormedDiagonal(0), Mxx = NormedDiagonal(1), Myy = NormedDiagonal(2);
             double Mz = Mxx + Myy;
-            double Cov_xy = Mxx * Myy - std::pow(NormedSymmetricMatrix(1, 2), 2);
+            double Cov_xy = Mxx * Myy - NormedSymmetricMatrix(1, 2) * NormedSymmetricMatrix(1, 2);
 
-            double Var_z = Mzz - std::pow(Mz, 2);
+            double Var_z = Mzz - (Mz * Mz);
 
-            double A2 = (4.0 * Cov_xy) - 3.0 * std::pow(Mz, 2) - Mzz;
+            double A2 = (4.0 * Cov_xy) - 3.0 * (Mz * Mz) - Mzz;
 
             double A1 = Var_z * Mz + 4.0 * Cov_xy * Mz - std::pow(NormedSymmetricMatrix(0, 1), 2) - std::pow(NormedSymmetricMatrix(0, 2), 2);
             double A0 = NormedSymmetricMatrix(0, 1) * (NormedSymmetricMatrix(0, 1)*Myy - NormedSymmetricMatrix(0, 2)*NormedSymmetricMatrix(2, 1))
@@ -120,10 +108,9 @@ class PrattNewton : public AlgebraicFit<PrattNewton> {
 
                 double Xcenter = (NormedSymmetricMatrix(1,0) * (Myy - x) - NormedSymmetricMatrix(2, 0) * NormedSymmetricMatrix(1, 2))/DET/2.0;
                 double Ycenter = (NormedSymmetricMatrix(2, 0) * (Mxx - x) - NormedSymmetricMatrix(1, 0) * NormedSymmetricMatrix(2, 1))/DET/2.0;
+                double radius = sqrt(Xcenter * Xcenter + Ycenter * Ycenter + Mz + x + x);
 
-                std::cout << "X: " << Xcenter + mean(0) << std::endl;
-                std::cout << "Y: " << Ycenter + mean(1) << std::endl;
-                std::cout << "Radius: " << sqrt(Xcenter * Xcenter + Ycenter * Ycenter + Mz + x + x) << std::endl;
+                circle.setParameters(Xcenter + mean(0), Ycenter + mean(1), radius);
             }
             return *this;
         }

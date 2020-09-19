@@ -29,9 +29,12 @@ struct FitCRTP {
 template <typename Derived>
 class FitBase : public FitCRTP<Derived> {
     public:
-        [[nodiscard]] inline Circle<double> getCircle() {
-            std::cout << "CRTP getCircle() called" << std::endl;
+        [[nodiscard]] Circle<double> getCircle() {
             return this->derived().circle;
+        }
+
+        [[nodiscard]] Eigen::Vector3<double> getVector() {
+            return this->derived().circle.getVector();
         }
 
     protected:
@@ -167,6 +170,10 @@ class SpecializedFitWithPole : public FitBase<Derived> {
         SpecializedFitWithPole(const Eigen::Ref<const DataMatrixD>& data, const Eigen::Ref<const Eigen::Vector2d>& pole) : Base(data, pole) {}
 };
 
+template <typename Derived>
+class SpecializedFitRandomPole : public FitBase<Derived> {
+    // selects one of the data points and uses that as the pole
+};
 
 } // end compass
 

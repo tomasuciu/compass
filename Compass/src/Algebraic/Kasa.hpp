@@ -83,13 +83,11 @@ class KasaConsistent : public AlgebraicFit<KasaConsistent> {
 
             Eigen::MatrixX<double> scatter = data.transpose() * data;
 
-            //TODO: experiment with Lanczos algorithm for finding smallest eigenvalue
             Eigen::EigenSolver<Eigen::MatrixX<double>> solver;
             solver.compute(scatter, false);
             double Vmax = solver.eigenvalues().real().minCoeff();
             double Vmin = 0.0;
 
-            //TODO: adjust tolerance
             float epsilon = 0.00001 * Vmax;
 
             double V = 0.0;

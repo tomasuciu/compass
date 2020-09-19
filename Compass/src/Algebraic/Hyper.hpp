@@ -73,7 +73,7 @@ class HyperSimple : public AlgebraicFit<HyperSimple> {
             Eigen::RowVectorX<double> S = mat.colwise().mean();
             Eigen::MatrixX<double> M = mat.transpose() * mat;
 
-            Eigen::MatrixX<double> N = (Eigen::Matrix4<double>(4, 4)
+            Eigen::Matrix4<double> N = (Eigen::Matrix4<double>(4, 4)
                     << 8*S(0), 4*S(1), 4*S(2), 2, 4*S(1), 1, 0, 0, 4*S(2), 0, 1, 0, 2, 0, 0, 0).finished();
 
             Eigen::MatrixX<double> NM = N.inverse() * M;
