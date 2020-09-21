@@ -17,8 +17,6 @@ Using an easily extensible interface based on the [curiously recurring template 
 
 **compass** is designed to be easily integrated into larger projects. To that end, its only dependency is [Eigen 3.3](http://eigen.tuxfamily.org). Further, **compass** can be collapsed into a singular header file using the included Python script, though, the benefits of this are minimal considering the small scale and incomplexity of the codebase.
 
-**compass** is in the early stages of its development and has not been exhaustively tested and optimized. As such, it is not recommended for use in production.
-
 The taxonomy of **compass** comprises three broad categories of algorithms &mdash; algebraic, geometric, and specialized &mdash; as well as several subcatagories which are further discussed in the [usage](#usage) section. An algorithm's classification is given in its relation to the following function.
 
 <p align="center">
@@ -27,7 +25,7 @@ The taxonomy of **compass** comprises three broad categories of algorithms &mdas
 
 - Algebraic algorithms are non-iterative procedures that reparameterize <a href="https://www.codecogs.com/eqnedit.php?latex=F" target="_blank"><img src="https://latex.codecogs.com/svg.latex?F" title="F" /></a> and minimize the corresponding objective function by way of orthogonal least squares.
 - Geometric algorithms, supplied with an initial guess (usually produced by an algorithm of the Algebraic variety), iteratively converge to a minimum of <a href="https://www.codecogs.com/eqnedit.php?latex=F" target="_blank"><img src="https://latex.codecogs.com/svg.latex?F" title="F" /></a>.
-- Specialized algorithms are a group of sophisticated routines that bear little similarity with their geometric and algebraic counterparts as well as with one another. They employ nonstandard techniques ranging from stereographic projections of the Riemann sphere to trigonometric transformations of <a href="https://www.codecogs.com/eqnedit.php?latex=F" target="_blank"><img src="https://latex.codecogs.com/svg.latex?F" title="F" /></a> (Karimaki).
+- Specialized algorithms are a group of sophisticated routines that bear little similarity with their geometric and algebraic counterparts as well as with one another. They employ nonstandard techniques ranging from stereographic projections of the Riemann sphere to trigonometric transformations of <a href="https://www.codecogs.com/eqnedit.php?latex=F" target="_blank"><img src="https://latex.codecogs.com/svg.latex?F" title="F" /></a>.
 
 ## Usage
 **compass** implements a module-centric organizational structure to reduce the amount of ``#include`` directives needed to write a minimally functional program. To avoid compilation overhead, files can be included individually.
@@ -198,6 +196,8 @@ The taxonomy of **compass** comprises three broad categories of algorithms &mdas
   </tr>
 </table>
 
+**compass** is in the early stages of its development and has not been exhaustively tested and optimized. As such, it is not recommended for use in production.
+
 ### Example
 
 ```cpp
@@ -219,7 +219,7 @@ There are two primary ways in which an algorithm can be fit to a given data matr
 
 The first example utilizes the default constructor and passes the matrix by `fit`, which dispatches to a local implementation of the algorithm. `fit` overwrites the parameters associated with an exisiting instance without requiring the construction of a new object, which can be expensive.
 
-The second example makes use of the overloaded constructor in the `GeometricFit` interface from which `LevenbergMarquardtFull` derives. Note that since `LevenbergMarquardtFull` is of class `GeometricFit`, it requires an initial guess produced by an algebraic algorithm, in this case, `TaubinSVD`.
+The second example makes use of the overloaded constructor in the `GeometricFit` interface from which `LevenbergMarquardtFull` derives. Note that since `LevenbergMarquardtFull` is of class `GeometricFit`, it requires an initial guess produced by an algebraic algorithm, in this case, `TaubinSVD`. The program will not compile if a non-algebraic algorithm is passed as a template parameter.
   
 `compass::Circle<T>` is a wrapper type for `Eigen::RowVector3<double>` that is used to store the approximated circle parameters <a href="https://www.codecogs.com/eqnedit.php?latex=\inline&space;\left&space;[&space;a,&space;b,&space;R&space;\right&space;]" target="_blank"><img src="https://latex.codecogs.com/svg.latex?\inline&space;\left&space;[&space;a,&space;b,&space;R&space;\right&space;]" title="\left [ a, b, R \right ]" /></a> that are output by each algorithm. If desired, the underlying vector can be extracted by `getVector()` instead of `getCircle()`.
 
@@ -274,7 +274,7 @@ I.fit(data, data.block<1, 2>(0, 0));
       ```terminal
       apt-get install libeigen3-dev
       ```
-    For more granular information, see Eigen's [installation](http://eigen.tuxfamily.org/index.php?title=Main_Page#Download) wiki entry.
+    For more granular information, see Eigen's [downloads page](http://eigen.tuxfamily.org/index.php?title=Main_Page#Download).
     + OS X 
     
       ```terminal
@@ -282,7 +282,7 @@ I.fit(data, data.block<1, 2>(0, 0));
       ```
 ### Installation
 ```terminal
-$ git clone https://github.com/artivis/manif.git
+$ git clone https://github.com/tomasuciu/compass.git
 $ cd compass && mkdir build && cd build
 $ cmake ..
 $ make
@@ -297,9 +297,11 @@ project(foo)
 # Find Eigen
 find_package(Eigen3 3.3 REQUIRED)
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${EIGEN3_INCLUDE_DIRS})
+
 # Find compass
 find_package(compass REQUIRED)
-add_executable(${PROJECT_NAME} src/ilovecircles.cpp)
+add_executable(${PROJECT_NAME} src/circles.cpp)
+
 # Add compass include directories to the target
 target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${compass_INCLUDE_DIRS})
 ```
