@@ -4,8 +4,15 @@
 #include "Core.hpp"
 #include "Algebraic.hpp"
 
-#include "Compass/src/Geometric/LevenbergMarquardt.hpp"
+#include "Compass/src/Core/GeometricBase.hpp"
+
 #include "Compass/src/Geometric/Landau.hpp"
-#include "Compass/src/Geometric/Spath.hpp"
+
+//#include "Compass/src/Geometric/Trust.hpp"
+
+
+//#include "Compass/src/Geometric/LevenbergMarquardt.hpp"
+//#include "Compass/src/Geometric/Landau.hpp"
+//#include "Compass/src/Geometric/Spath.hpp"
 
 #endif
