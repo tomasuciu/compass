@@ -1,9 +1,6 @@
 #ifndef FORWARD_DECLARATIONS_HPP
 #define FORWARD_DECLARATIONS_HPP
 
-#include <utility>
-#include <type_traits>
-
 namespace compass {
 
 //TODO: Add macro to check for eigen and the include the necessary header files
@@ -14,6 +11,8 @@ template<typename Derived> class FitBase;
 template<typename Derived> class AlgebraicFit;
 
 class TaubinNewton;
+class TaubinSVD;
+class TaubinNystromSVD;
 class PrattNewton;
 class PrattSVD;
 class PrattRobust;
@@ -53,10 +52,8 @@ template<typename Derived> class SpecializedFitRandomPole;
 template<class A> class Landau;
 template<class A> class Trust;
 template<class A> class LevenbergMarquardtFull;
+template<class A> class LevenbergMarquardtReduced;
 
-// test algebraic methods
-class TaubinSVD;
-class TaubinNystromSVD;
 
 namespace internal {
 

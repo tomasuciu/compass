@@ -1,15 +1,12 @@
 #ifndef TRUST_HPP
 #define TRUST_HPP
 
-//#include "Compass/src/Core/fit.hpp"
-//#include <eigen-master/Eigen/QR>
-
 namespace compass {
 
 template <class A>
-class Trust : public GeometricFit<Trust<A>, A> {
-    friend class GeometricFit<Trust<A>, A>;
-    typedef GeometricFit<Trust<A>, A> Base;
+class Trust : public GeometricFitImpl<Trust<A>, A> {
+    friend GeometricFitImpl<Trust<A>, A>;
+    typedef GeometricFitImpl<Trust<A>, A> Base;
 
     public:
         Trust<A>() : Base() {}
