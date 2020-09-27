@@ -1,14 +1,6 @@
 #ifndef TAUBIN_HPP
 #define TAUBIN_HPP
 
-#include <random>
-
-#include <eigen-master/Eigen/SVD>
-#include <eigen-master/Eigen/QR>
-#include <eigen-master/Eigen/Cholesky>
-
-#include "Compass/src/Core/fit.hpp"
-
 namespace compass {
 class TaubinSVD : public AlgebraicFit<TaubinSVD> {
     friend class AlgebraicFit<TaubinSVD>;

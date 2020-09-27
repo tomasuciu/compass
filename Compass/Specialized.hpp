@@ -3,6 +3,7 @@
 
 #include "Core.hpp"
 
+
 #include "Compass/src/Specialized/Inversion.hpp"
 #include "Compass/src/Specialized/Riemann.hpp"
 

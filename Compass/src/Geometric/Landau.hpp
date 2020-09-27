@@ -1,14 +1,12 @@
 #ifndef LANDAU_HPP
 #define LANDAU_HPP
 
-#include "Compass/src/Core/fit.hpp"
-
 namespace compass {
 
-template <class A>
-class Landau : public GeometricFit<Landau<A>, A> {
-    friend class GeometricFit<Landau<A>, A>;
-    typedef GeometricFit<Landau<A>, A> Base;
+template<class A>
+class Landau : public GeometricFitImpl<Landau<A>, A> {
+    friend GeometricFitImpl<Landau<A>, A>;
+    typedef GeometricFitImpl<Landau<A>, A> Base;
 
     public:
         Landau<A>() : Base() {}

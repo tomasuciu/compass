@@ -1,10 +1,6 @@
 #ifndef KUKUSH_MARKOVKSY_HUFFEL_HPP
 #define KUKUSH_MARKOVKSY_HUFFEL_HPP
 
-#include <eigen-master/Eigen/Eigenvalues>
-
-#include "Compass/src/Core/fit.hpp"
-
 namespace compass {
 // TODO: create AlgebraicFitConsistent base class: derive KMH and KasaConsistent from it;
 // Try and minimize dynamic matrix allocations
