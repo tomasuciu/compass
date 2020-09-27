@@ -1,11 +1,6 @@
 #ifndef HYPER_HPP
 #define HYPER_HPP
 
-#include <eigen-master/Eigen/SVD>
-#include <eigen-master/Eigen/Eigenvalues>
-
-#include "Compass/src/Core/fit.hpp"
-
 namespace compass {
 
 class HyperSVD : public AlgebraicFit<HyperSVD> {

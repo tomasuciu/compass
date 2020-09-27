@@ -1,10 +1,6 @@
 #ifndef NIEVERGELT_HPP
 #define NIEVERGELT_HPP
 
-#include <eigen-master/Eigen/SVD>
-
-#include "Compass/src/Core/fit.hpp"
-
 namespace compass {
 
 class Nievergelt : public AlgebraicFit<Nievergelt> {

@@ -1,11 +1,6 @@
 #ifndef PRATT_HPP
 #define PRATT_HPP
 
-#include <eigen-master/Eigen/SVD>
-#include <eigen-master/Eigen/Eigenvalues>
-
-#include "Compass/src/Core/fit.hpp"
-
 namespace compass {
 
 class PrattSVD : public AlgebraicFit<PrattSVD> {

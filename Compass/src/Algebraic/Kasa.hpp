@@ -1,11 +1,6 @@
 #ifndef KASA_HPP
 #define KASA_HPP
 
-#include <eigen-master/Eigen/Cholesky>
-#include <eigen-master/Eigen/Eigenvalues>
-
-#include "Compass/src/Core/fit.hpp"
-
 namespace compass {
 
 class Kasa : public AlgebraicFit<Kasa> {

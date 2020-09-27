@@ -1,9 +1,6 @@
 #ifndef GANDER_GOLUB_STREBEL_HPP
 #define GANDER_GOLUB_STREBEL_HPP
 
-#include "Compass/src/Core/fit.hpp"
-#include <eigen-master/Eigen/SVD>
-
 namespace compass {
 class GanderGolubStrebel : public AlgebraicFit<GanderGolubStrebel> {
     friend class AlgebraicFit<GanderGolubStrebel>;
