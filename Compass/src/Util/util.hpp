@@ -1,14 +1,12 @@
-#pragma once
+
 #ifndef UTIL_HPP
 #define UTIL_HPP
 
-#include <iostream>
-#include <eigen-master/Eigen/Dense>
-//#include <Eigen/Dense>
-
 namespace compass {
-//TODO: Figure out generic type harmony between util and fit
-using DataMatrix = Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>;
+
+using DataMatrixD = Eigen::Matrix<double, Eigen::Dynamic, 2, Eigen::RowMajor>;
+using DataMatrix = Eigen::Matrix<double, 2, Eigen::Dynamic, Eigen::RowMajor>; // 2 X N
+
 using DataMatrix3 = Eigen::Matrix<double, 3, Eigen::Dynamic, Eigen::RowMajor>;
 
 using DesignMatrix = Eigen::Matrix<double, Eigen::Dynamic, 3>;
@@ -65,7 +63,6 @@ static void rescale() {}
     return M;
 }
 
-//TODO: implement support for different norms - hence p parameter
 template <typename T>
 [[nodiscard]] static T computeNorm (Eigen::VectorX<double> vec, int p=2) {
     return vec.cwiseAbs2().sum();

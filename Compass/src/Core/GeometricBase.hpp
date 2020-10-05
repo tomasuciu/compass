@@ -1,10 +1,6 @@
 #ifndef GEOMETRIC_BASE_HPP
 #define GEOMETRIC_BASE_HPP
 
-//#include "FitBase.hpp"
-//#include "AlgebraicBase.hpp"
-#include <type_traits>
-
 namespace compass {
 
 // TODO: Implement functionality for geometric fits where the initial guess has been precomputed
@@ -31,9 +27,6 @@ class GeometricFitGuessIndiscriminate : public FitBase<Derived> {
 
 template<typename Derived, class A, bool Enable>
 class GeometricFit;
-
-//template<typename Derived, class A>
-//class GeometricFit<Derived, A, (std::is_base_of<AlgebraicFit<A>, A>::value)> {};
 
 template <typename Derived, class A>
 class GeometricFit<Derived, A, true> : public FitBase<Derived> {
@@ -62,11 +55,6 @@ template<typename Derived, class A>
 class GeometricFit<Derived, A, false> {
     static_assert(False<A>{}, "Invalid parameter for algorithm of type GeometricFit");
 };
-
-
-//template<typename Derived, class A>
-//using GeometricFitImpl = GeometricFit<Derived, A, (std::is_base_of<AlgebraicFit<A>, A>::value)>;
-
 
 }
 

@@ -1,15 +1,13 @@
 #ifndef SPATH_HPP
 #define SPATH_HPP
 
-#include "Compass/src/Core/fit.hpp"
-
 namespace compass {
 
 template <class A>
-class Spath : public GeometricFit<Spath<A>, A> {
+class Spath : public GeometricFitImpl<Spath<A>, A> {
 
-    friend class GeometricFit<Spath<A>, A>;
-    typedef GeometricFit<Spath<A>, A> Base;
+    friend GeometricFitImpl<Spath<A>, A>;
+    typedef GeometricFitImpl<Spath<A>, A> Base;
 
     public:
         Spath<A>() : Base() {}

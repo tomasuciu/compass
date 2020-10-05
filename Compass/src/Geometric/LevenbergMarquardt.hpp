@@ -1,17 +1,12 @@
 #ifndef LEVENBERG_MARQUARDT_HPP
 #define LEVENBERG_MARQUARDT_HPP
 
-#include "Compass/src/Core/fit.hpp"
-
-#include <exception>
-#include <eigen-master/Eigen/QR>
-
 namespace compass {
 
 template<class A>
-class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull<A>, A> {
-    friend class GeometricFit<LevenbergMarquardtFull<A>, A>;
-    typedef GeometricFit<LevenbergMarquardtFull<A>, A> Base;
+class LevenbergMarquardtFull : public GeometricFitImpl<LevenbergMarquardtFull<A>, A> {
+    friend GeometricFitImpl<LevenbergMarquardtFull<A>, A>;
+    typedef GeometricFitImpl<LevenbergMarquardtFull<A>, A> Base;
 
     public:
         LevenbergMarquardtFull() : Base() {}
@@ -112,9 +107,9 @@ class LevenbergMarquardtFull : public GeometricFit<LevenbergMarquardtFull<A>, A>
 };
 
 template<class A>
-class LevenbergMarquardtReduced : public GeometricFit<LevenbergMarquardtReduced<A>, A> {
-    friend class GeometricFit<LevenbergMarquardtReduced<A>, A>;
-    typedef GeometricFit<LevenbergMarquardtReduced<A>, A> Base;
+class LevenbergMarquardtReduced : public GeometricFitImpl<LevenbergMarquardtReduced<A>, A> {
+    friend GeometricFitImpl<LevenbergMarquardtReduced<A>, A>;
+    typedef GeometricFitImpl<LevenbergMarquardtReduced<A>, A> Base;
 
     public:
         LevenbergMarquardtReduced<A>() : Base() {}
